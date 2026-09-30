@@ -1,0 +1,46 @@
+/* 디자인 토큰 — 레퍼런스: Dala (styles.refero.design)
+   검정 캔버스 위에서 위계는 굵기가 아니라 크기로 만든다. 헤드라인은 전부 400. */
+:root {
+  --void: #000000;
+  --bone: #ffffff;
+  --ash: #9a9a9a;
+  --mist: #bdbdbd;
+  --line: #262626;
+  --iris: #8052ff;      /* 채운 버튼은 이 색만 */
+  --saffron: #ffb829;   /* 작은 라벨·강조 */
+  --verdant: #15846e;
+
+  /* 팀원 다섯 색 — 별자리의 다섯 덩어리. 순서는 content/site.js 의 team 순서 */
+  --m0: #8052ff;
+  --m1: #ffb829;
+  --m2: #1fbf9c;
+  --m3: #ff4fa3;
+  --m4: #3d8bff;
+
+  --font: "Pretendard Variable", Pretendard, "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --t-caption: 12px;
+  --t-nav: 14px;
+  --t-body: 18px;
+  --t-h2xs: 24px;
+  --t-sub: 36px;
+  --t-h: clamp(36px, 4.6vw, 56px);
+  --t-lg: clamp(44px, 6.4vw, 78px);
+  --t-display: clamp(52px, 9vw, 113px);
+
+  --w-body: 250;        /* 레퍼런스는 200. 한글 획이 가늘어 250 으로 올렸다 */
+  --w-head: 400;
+
+  --s1: 6px;
+  --s2: 12px;
+  --s3: 18px;
+  --s4: 24px;
+  --s5: 36px;
+  --s6: 60px;
+  --s7: 96px;
+  --s8: 120px;
+
+  --radius: 24px;
+  --page: 1280px;
+  --gutter: clamp(16px, 4vw, 48px);
+}

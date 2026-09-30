@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M3 Final Project</title>
+  <meta name="description" content="코디세이 AI 네이티브 대전 M3 Final Project 팀 페이지">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <canvas id="sky" aria-hidden="true"></canvas>
+
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="맨 위로">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#8052ff"/>
+            <stop offset="1" stop-color="#15846e"/>
+          </linearGradient>
+        </defs>
+        <path d="M3 20 L12 3 L21 20 Z" fill="url(#mark)"/>
+      </svg>
+      <span data-slot="brand">M3 Final</span>
+    </a>
+    <nav class="nav-links" aria-label="섹션">
+      <a href="#pitches">주제 후보</a>
+      <a href="#tech">AI 기술</a>
+      <a href="#service">서비스</a>
+      <a href="#team">팀</a>
+      <a href="#progress">진행</a>
+    </nav>
+    <a class="btn" data-slot="contribute" href="CONTRIBUTING.md">내 자리 채우기</a>
+  </header>
+
+  <main id="top">
+    <!-- 첫 화면: 서비스 이름이 정해지면 content/site.js 의 name·oneLiner 가 들어온다 -->
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="label">코디세이 AI 네이티브 대전, M3 Final Project</p>
+        <h1 class="display" data-slot="name"></h1>
+        <p class="lede" data-slot="oneLiner"></p>
+        <ul class="legend" data-slot="legend" aria-label="팀원"></ul>
+      </div>
+    </section>
+
+    <section class="band" id="pitches" aria-labelledby="pitches-h">
+      <div class="split">
+        <div>
+          <h2 class="h" id="pitches-h">무엇을 만들지는<br>아직 열려 있다</h2>
+        </div>
+        <div class="split-body">
+          <p class="label">주제 후보</p>
+          <p class="body">각자 자기 파일의 <code>pitch</code> 에 문제 하나를 적는다. 모인 후보 중 하나를 골라
+            <code>content/site.js</code> 의 <code>name</code> 을 채우면 이 페이지 첫 화면이 그 서비스로 바뀐다.</p>
+        </div>
+      </div>
+      <ol class="pitches" data-slot="pitches"></ol>
+    </section>
+
+    <section class="band" id="tech" aria-labelledby="tech-h">
+      <div class="split split-rev">
+        <div class="split-body">
+          <p class="label">필수 요건</p>
+          <p class="body">생성형 AI 또는 AI Agent 가 핵심 기능이어야 하고, 아래 다섯 가지 중
+            <strong>두 가지 이상</strong>을 서비스에 넣어야 한다. 쓰기로 한 것은
+            <code>site.js</code> 의 <code>tech</code> 에서 <code>true</code> 로 바꾼다.</p>
+          <p class="tally" data-slot="techTally"></p>
+        </div>
+        <div>
+          <h2 class="h" id="tech-h">다섯 중 둘은<br>반드시 쓴다</h2>
+        </div>
+      </div>
+      <ul class="tech" data-slot="tech"></ul>
+    </section>
+
+    <section class="band" id="service" aria-labelledby="service-h">
+      <h2 class="h" id="service-h">문제에서 배포까지</h2>
+      <div class="story" data-slot="story"></div>
+    </section>
+
+    <section class="band" id="team" aria-labelledby="team-h">
+      <div class="split">
+        <div>
+          <h2 class="h" id="team-h">다섯 명,<br>다섯 자리</h2>
+        </div>
+        <div class="split-body">
+          <p class="label">팀원과 역할</p>
+          <p class="body">모든 팀원이 실질적으로 기여해야 한다. 역할·담당·PR 은 각자
+            <code>content/members/</code> 의 자기 파일에 적는다. 파일을 채우면 첫 화면 별자리에서 내 색이 밝아진다.</p>
+        </div>
+      </div>
+      <ul class="team" data-slot="team"></ul>
+    </section>
+
+    <section class="band" id="progress" aria-labelledby="progress-h">
+      <div class="split split-rev">
+        <div class="split-body">
+          <p class="label">최종 결과물</p>
+          <p class="body">미션이 요구하는 산출물 여섯 가지와 실사용자 피드백 다섯 건.
+            끝낸 항목은 <code>site.js</code> 의 <code>deliverables</code> 에서 <code>true</code> 로 바꾼다.</p>
+        </div>
+        <div>
+          <h2 class="h" id="progress-h">배포하고,<br>다섯 명에게 묻는다</h2>
+        </div>
+      </div>
+      <ol class="deliverables" data-slot="deliverables"></ol>
+      <div class="feedback">
+        <h3 class="h2xs">실사용자 피드백</h3>
+        <ol class="feedback-list" data-slot="feedback"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>이 페이지와 서비스의 일부 글·이미지는 생성형 AI 로 만들었다. 서비스 화면에서도 AI 생성 결과임을 표시한다.</p>
+    <p class="foot-meta"><span data-slot="deploy"></span></p>
+  </footer>
+
+  <!-- 내용은 전부 content/ 에 있다. 빌드 없이 index.html 을 더블클릭해도 열리도록 모듈 대신 일반 스크립트를 쓴다 -->
+  <script src="content/site.js"></script>
+  <script src="content/members/juhyun.js"></script>
+  <script src="content/members/yujin.js"></script>
+  <script src="content/members/kihoon.js"></script>
+  <script src="content/members/jiyoung.js"></script>
+  <script src="content/members/yuyoung.js"></script>
+  <script src="assets/js/render.js"></script>
+  <script src="assets/js/constellation.js"></script>
+</body>
+</html>
