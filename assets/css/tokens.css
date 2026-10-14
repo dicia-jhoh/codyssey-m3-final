@@ -1,35 +1,34 @@
-/* 디자인 토큰 — 레퍼런스: Dala (styles.refero.design)
-   검정 캔버스 위에서 위계는 굵기가 아니라 크기로 만든다. 헤드라인은 전부 400. */
+/* 디자인 토큰 — 「빨간펜이 지나간 공문」.
+   책상 위 회청색 바탕, 흰 공문 종이, 먹색 글자, 펜 세 자루.
+   펜 3색은 장식이 아니라 뜻이다: 빨강 = 낼 돈, 파랑 = 기한, 초록 = 챙길 서류(서비스 화면 web/ 과 같은 약속). */
 :root {
-  --void: #000000;
-  --bone: #ffffff;
-  --ash: #9a9a9a;
-  --mist: #bdbdbd;
-  --line: #262626;
-  --iris: #8052ff;      /* 채운 버튼은 이 색만 */
-  --saffron: #ffb829;   /* 작은 라벨·강조 */
-  --verdant: #15846e;
+  --desk: #e9edf2;
+  --desk-2: #dde3ea;
+  --paper: #ffffff;
+  --ink: #1b2230;
+  --ink-2: #4a5568;
+  --ink-3: #6b7685;
+  --rule: #c9d1dc;
+  --rule-2: #e3e8ee;
 
-  /* 팀원 다섯 색 — 별자리의 다섯 덩어리. 순서는 content/site.js 의 team 순서 */
-  --m0: #8052ff;
-  --m1: #ffb829;
-  --m2: #1fbf9c;
-  --m3: #ff4fa3;
-  --m4: #3d8bff;
+  --red: #d7263d;      /* 낼 돈 · 빨간펜 · 도장 */
+  --blue: #2347c5;     /* 기한 · 볼펜 */
+  --green: #159a5b;    /* 챙길 서류 · 형광펜 */
+  --green-hi: rgb(21 154 91 / 0.18);
+  --red-soft: rgb(215 38 61 / 0.08);
 
-  --font: "Pretendard Variable", Pretendard, "Inter", ui-sans-serif, system-ui, sans-serif;
+  --f-head: "IBM Plex Sans KR", "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  --f-body: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  --f-pen: "Nanum Pen Script", "Pretendard Variable", cursive;
 
-  --t-caption: 12px;
-  --t-nav: 14px;
+  /* 1.25 비율 눈금 */
+  --t-sm: 15px;
   --t-body: 18px;
-  --t-h2xs: 24px;
-  --t-sub: 36px;
-  --t-h: clamp(36px, 4.6vw, 56px);
-  --t-lg: clamp(44px, 6.4vw, 78px);
-  --t-display: clamp(52px, 9vw, 113px);
-
-  --w-body: 250;        /* 레퍼런스는 200. 한글 획이 가늘어 250 으로 올렸다 */
-  --w-head: 400;
+  --t-lead: 22px;
+  --t-h3: 22px;
+  --t-h: clamp(30px, 3.6vw, 40px);
+  --t-hero: clamp(42px, 6.2vw, 76px);
+  --t-pen: clamp(26px, 2.6vw, 32px);
 
   --s1: 6px;
   --s2: 12px;
@@ -38,9 +37,7 @@
   --s5: 36px;
   --s6: 60px;
   --s7: 96px;
-  --s8: 120px;
 
-  --radius: 24px;
-  --page: 1280px;
+  --page: 1180px;
   --gutter: clamp(16px, 4vw, 48px);
 }
