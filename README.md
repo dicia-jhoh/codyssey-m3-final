@@ -136,7 +136,7 @@ deploy/                 OCI 배포(systemd 서비스 파일, 절차)
 automation/n8n/         기한 알림 워크플로우
 data/testset/           공문 테스트셋 라벨(사진은 커밋하지 않는다)
 docs/                   미션 산출물 문서, plan/ = 제출한 기획서 원본
-index.html · assets/ · content/   팀 홈페이지(빌드 없음)
+index.html · assets/ · content/   팀 홈페이지(빌드 없음) — 로고 키트·사용 가이드 = assets/brand/
 ```
 
 ## 용어 사전

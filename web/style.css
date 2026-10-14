@@ -2,7 +2,8 @@
 :root { --money: #e5484d; --deadline: #3e63dd; --document: #30a46c; font-size: 18px; }
 body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.6; color: #111; background: #fafafa; }
 header, main { max-width: 640px; margin: 0 auto; padding: 16px; }
-h1 { margin: 0; font-size: 2rem; }
+h1 { margin: 0; line-height: 0; }
+h1 .logo { height: 56px; width: auto; }
 .upload { display: block; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 700;
   color: #fff; background: #111; border-radius: 12px; cursor: pointer; }
 .upload input { display: none; }
