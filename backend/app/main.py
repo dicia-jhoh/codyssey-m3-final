@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -11,7 +12,8 @@ from .agent import decode
 from .schema import Decoded
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
-WEB_DIR = Path(__file__).resolve().parents[2] / "web"  # 서비스 화면(송유영)
+ROOT = Path(__file__).resolve().parents[2]
+WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
 app = FastAPI(title="또박또박 API", description="공문 사진 → 할 일·근거")
 app.add_middleware(
@@ -38,6 +40,19 @@ async def decode_photo(file: UploadFile = File(...)) -> Decoded:
     return decode(image)
 
 
-# 화면도 같은 서버가 내준다 — 배포 주소 하나로 화면과 API 가 같이 열린다(CORS 불필요).
-# 위의 API 경로가 먼저 잡히고, 나머지 경로만 web/ 로 간다.
-app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+# 포트 하나(M3 = 8037)로 팀 홈페이지·서비스 화면·API 를 같이 낸다(CORS 불필요).
+#   /       팀 홈페이지(index.html)     /app/   서비스 화면(web/)     /health · /decode   API
+# 홈페이지는 필요한 폴더만 연다 — 저장소 루트를 통째로 열면 backend/.env 같은 비밀이 새어 나간다.
+app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="web")
+for _dir in ("assets", "content", "docs/plan"):
+    app.mount(f"/{_dir}", StaticFiles(directory=ROOT / _dir), name=_dir.replace("/", "-"))
+
+
+@app.get("/", include_in_schema=False)
+def homepage() -> FileResponse:
+    return FileResponse(ROOT / "index.html")
+
+
+@app.get("/app", include_in_schema=False)
+def app_slash() -> RedirectResponse:
+    return RedirectResponse("/app/")

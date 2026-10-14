@@ -1,9 +1,14 @@
 # 배포 — OCI (mc-osaka-1)
 
-| 대상 | 주소 | 서비스(systemd) | 코드 위치 |
-|---|---|---|---|
-| 서비스(화면 + API) | http://129.225.184.224:8035/ | `ttobak` | `~/codyssey-m3-final` (이 저장소 clone) |
-| 팀 홈페이지 | http://129.225.184.224:8037/ | `codyssey-m3-final` | 같은 clone 의 맨 위 폴더 |
+| 대상 | 주소 |
+|---|---|
+| 팀 홈페이지 | http://129.225.184.224:8037/ |
+| 서비스 화면 | http://129.225.184.224:8037/app/ |
+| API | http://129.225.184.224:8037/health · `/decode` · `/docs` |
+
+셋 다 systemd `ttobak` 하나(FastAPI, `~/codyssey-m3-final` = 이 저장소 clone)가 낸다.
+포트는 코디세이 배포 규칙(8000 + 문항 번호 끝 두 자리)의 **M3 자리 8037** 이다. 8033~8036 은 다른 미션 자리라 쓰지 않는다.
+홈페이지는 `index.html`·`assets/`·`content/`·`docs/plan/` 만 연다 — 저장소의 다른 파일(`backend/.env` 등)은 404 다.
 
 포트 8033~8037 은 서버 방화벽(iptables)과 OCI 보안 목록에 이미 열려 있다.
 
@@ -16,6 +21,7 @@ git clone https://github.com/dicia-jhoh/codyssey-m3-final.git ~/codyssey-m3-fina
 cd ~/codyssey-m3-final/backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 sudo cp ../deploy/ttobak.service /etc/systemd/system/
+sudo systemctl disable --now codyssey-m3-final 2>/dev/null   # 예전 정적 홈페이지(같은 8037)
 sudo systemctl daemon-reload && sudo systemctl enable --now ttobak
 ```
 
@@ -27,7 +33,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now ttobak
 cd ~/codyssey-m3-final && git pull --ff-only
 backend/.venv/bin/pip install -q -r backend/requirements.txt
 sudo systemctl restart ttobak
-curl -s localhost:8035/health          # {"ok":true,...} 이면 성공
+curl -s localhost:8037/health          # {"ok":true,...} 이면 성공
 ```
 
 ## 진짜 해독 켜기
