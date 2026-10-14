@@ -15,10 +15,10 @@
 | 이름 | 역할 | 담당 업무 | GitHub |
 |------|------|-----------|--------|
 | 오주현 | | | [@dicia-jhoh](https://github.com/dicia-jhoh) |
-| 송유진 | | | |
-| 김기훈 | | | |
+| 이정관 | | | [@ljk-cidy](https://github.com/ljk-cidy) |
+| 김기훈 | | | [@duplgabszin](https://github.com/duplgabszin) |
 | 황지영 | | | [@ppungee-maker](https://github.com/ppungee-maker) |
-| 송유영 | | | |
+| 송유영 | | | [@youyu10012-glitch](https://github.com/youyu10012-glitch) |
 
 역할은 홈페이지와 같은 원본을 쓴다 — `content/members/<내 id>.js` 를 채우고 이 표도 맞춘다.
 

@@ -6,7 +6,7 @@ window.SITE = {
   oneLiner: "",
 
   // 별자리 색 순서. content/members/<id>.js 의 id 와 맞춘다
-  team: ["juhyun", "yujin", "kihoon", "jiyoung", "yuyoung"],
+  team: ["juhyun", "jeonggwan", "kihoon", "jiyoung", "yuyoung"],
 
   // 필수 기술 요소 — 두 개 이상 true
   tech: {

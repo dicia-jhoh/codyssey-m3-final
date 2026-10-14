@@ -8,7 +8,7 @@
 | 이름 | 내 파일 |
 |---|---|
 | 오주현 | `content/members/juhyun.js` |
-| 송유진 | `content/members/yujin.js` |
+| 이정관 | `content/members/jeonggwan.js` |
 | 김기훈 | `content/members/kihoon.js` |
 | 황지영 | `content/members/jiyoung.js` |
 | 송유영 | `content/members/yuyoung.js` |
@@ -16,12 +16,12 @@
 ```bash
 git clone https://github.com/dicia-jhoh/codyssey-m3-final.git
 cd codyssey-m3-final
-git switch -c yujin/profile          # <내 id>/<무엇>
-# content/members/yujin.js 를 연다 → github·role·work·pitch 채우기
+git switch -c jeonggwan/profile          # <내 id>/<무엇>
+# content/members/jeonggwan.js 를 연다 → github·role·work·pitch 채우기
 python3 -m http.server 8000         # http://localhost:8000 에서 내 칸 확인
-git add content/members/yujin.js
-git commit -m "송유진: 역할·주제 후보 추가"
-git push -u origin yujin/profile
+git add content/members/jeonggwan.js
+git commit -m "이정관: 역할·주제 후보 추가"
+git push -u origin jeonggwan/profile
 # GitHub 에서 Pull Request 만들기
 ```
 

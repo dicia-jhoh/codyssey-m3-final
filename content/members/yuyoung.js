@@ -2,7 +2,7 @@
 window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.yuyoung = {
   name: "송유영",
-  github: "", // GitHub 아이디
+  github: "youyu10012-glitch", // GitHub 아이디
   role: "", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
     // 담당 업무 한 줄씩. 예: "RAG 파이프라인 — 문서 임베딩·검색"
