@@ -3,9 +3,11 @@ window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.yuyoung = {
   name: "송유영",
   github: "youyu10012-glitch", // GitHub 아이디
-  role: "", // 예: "PM / Backend", "Frontend", "AI / Data"
+  role: "Frontend", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
-    // 담당 업무 한 줄씩. 예: "RAG 파이프라인 — 문서 임베딩·검색"
+    "모바일 화면 (web/)",
+    "3색 표시 오버레이·할 일 카드",
+    "손주 모드 공유 화면",
   ],
   prs: [
     // 내가 올린 PR 주소

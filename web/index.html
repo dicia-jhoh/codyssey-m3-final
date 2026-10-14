@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>또박또박 — 공문 해독기</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 담당: 송유영. 백엔드 주소는 app.js 맨 위 API_BASE -->
+  <header>
+    <h1>또박또박</h1>
+    <p>공문 사진 한 장이면 「얼마를 · 언제까지 · 무엇을」</p>
+  </header>
+
+  <main>
+    <label class="upload">
+      공문 사진 찍기 · 고르기
+      <input id="photo" type="file" accept="image/*" capture="environment">
+    </label>
+
+    <p id="status" role="status"></p>
+    <p id="sample" class="banner" hidden>샘플 모드 — 실제 공문이 아닙니다</p>
+
+    <section id="result" hidden>
+      <p class="ai-notice" id="aiNotice"></p>
+      <h2 id="title"></h2>
+
+      <!-- 3색 빨간펜: 사진 위에 bbox 비율로 상자를 얹는다 -->
+      <div class="paper">
+        <img id="preview" alt="올린 공문 사진">
+        <div id="marks"></div>
+      </div>
+      <p class="legend"><span class="money">낼 돈</span> <span class="deadline">기한</span> <span class="document">챙길 서류</span></p>
+
+      <h3>할 일</h3>
+      <ul id="todos" class="cards"></ul>
+
+      <h3>쉬운 말 풀이와 근거</h3>
+      <ul id="basis"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

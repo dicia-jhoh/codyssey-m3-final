@@ -3,9 +3,11 @@ window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.kihoon = {
   name: "김기훈",
   github: "duplgabszin", // GitHub 아이디
-  role: "", // 예: "PM / Backend", "Frontend", "AI / Data"
+  role: "RAG 데이터 · 품질", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
-    // 담당 업무 한 줄씩. 예: "RAG 파이프라인 — 문서 임베딩·검색"
+    "법령·정부24 문서 수집과 근거 검색 (backend/app/rag.py)",
+    "공문 30장 테스트셋 라벨링 (data/testset/)",
+    "정확도 측정·사용자 설문 분석",
   ],
   prs: [
     // 내가 올린 PR 주소

@@ -3,9 +3,11 @@ window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.jiyoung = {
   name: "황지영",
   github: "ppungee-maker", // GitHub 아이디
-  role: "", // 예: "PM / Backend", "Frontend", "AI / Data"
+  role: "멀티모달 추출", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
-    // 담당 업무 한 줄씩. 예: "RAG 파이프라인 — 문서 임베딩·검색"
+    "비전 LLM 추출·JSON 파싱 (backend/app/extract.py)",
+    "3색 빨간펜 좌표 생성",
+    "금액·날짜 이중 확인",
   ],
   prs: [
     // 내가 올린 PR 주소

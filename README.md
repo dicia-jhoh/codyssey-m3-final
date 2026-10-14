@@ -1,65 +1,101 @@
-# (서비스 이름 미정) — M3 Final Project
+# 또박또박 — AI 공문 해독기
 
 코디세이 AI 네이티브 대전 **M3 AI 네이티브 Final Project 자율 주제** 팀 저장소.
-주제는 아직 열려 있다. 각자 후보를 내고, 하나로 정하면 이 제목부터 바꾼다.
-
-> 지금 이 저장소에는 **팀 홈페이지 뼈대**만 있다. 서비스 코드는 주제가 정해진 뒤 들어온다.
-> 빈 칸은 비어 있는 그대로 둔다 — 지어낸 내용·지어낸 기여로 채우지 않는다.
 
 ## 프로젝트 소개
 
-(주제가 정해지면 두세 문장 — 누구의 어떤 문제를, AI 로 어떻게 푸는가)
+고지서·가정통신문·주민센터 안내문을 받고도 「그래서 뭘 해야 하는지」 모르는 사람이 많다. 한자어와 법령 인용, 본문·표·뒷면에 흩어진 기한과 금액 때문이다.
+또박또박은 공문 사진 한 장을 받아 **원본 위에** 빨강 = 낼 돈, 파랑 = 기한, 초록 = 챙길 서류를 긋고, 할 일 카드와 근거 문장을 붙여 준다.
+1차 사용자는 대전의 60대 이상 어르신과 그 자녀다.
+
+- 기획서: [docs/01-기획서.md](docs/01-기획서.md) (제출본 [PDF](docs/plan/상세기획서-또박또박.pdf))
+- 기능 명세·아키텍처: [docs/02-기능명세.md](docs/02-기능명세.md)
+- AI 설계: [docs/03-AI-설계.md](docs/03-AI-설계.md)
+
+> 지금은 **뼈대 단계**다. 백엔드는 샘플 모드(가짜 공문 1건)로 끝까지 돌아가고, 각 단계의 진짜 구현은 담당자가 자기 파일에서 채운다.
+> 빈 칸은 빈 그대로 둔다 — 지어낸 결과·피드백으로 채우지 않는다.
 
 ## 팀원 및 역할
 
-| 이름 | 역할 | 담당 업무 | GitHub |
-|------|------|-----------|--------|
-| 오주현 | | | [@dicia-jhoh](https://github.com/dicia-jhoh) |
-| 이정관 | | | [@ljk-cidy](https://github.com/ljk-cidy) |
-| 김기훈 | | | [@duplgabszin](https://github.com/duplgabszin) |
-| 황지영 | | | [@ppungee-maker](https://github.com/ppungee-maker) |
-| 송유영 | | | [@youyu10012-glitch](https://github.com/youyu10012-glitch) |
+| 이름 | 역할 | 담당 업무 | 내 파일 | GitHub |
+|------|------|-----------|---------|--------|
+| 오주현(팀장) | PM · AI Agent | 일정·PR 리뷰·통합, Agent 4단계, 프롬프트 JSON 스키마 | `backend/app/agent.py` · `schema.py` | [@dicia-jhoh](https://github.com/dicia-jhoh) |
+| 황지영 | 멀티모달 추출 | 비전 LLM 추출·파싱, 3색 좌표, 금액·날짜 이중 확인 | `backend/app/extract.py` | [@ppungee-maker](https://github.com/ppungee-maker) |
+| 이정관 | Backend · 배포 · 자동화 | FastAPI, Render·Vercel 배포, n8n 기한 알림 | `backend/app/main.py` · `automation/` | [@ljk-cidy](https://github.com/ljk-cidy) |
+| 송유영 | Frontend | 모바일 화면, 3색 오버레이, 할 일 카드, 손주 모드 | `web/` | [@youyu10012-glitch](https://github.com/youyu10012-glitch) |
+| 김기훈 | RAG 데이터 · 품질 | 법령·정부24 수집과 근거 검색, 테스트셋 30장, 정확도·설문 | `backend/app/rag.py` · `data/testset/` | [@duplgabszin](https://github.com/duplgabszin) |
 
-역할은 홈페이지와 같은 원본을 쓴다 — `content/members/<내 id>.js` 를 채우고 이 표도 맞춘다.
+홈페이지의 팀 칸은 `content/members/<내 id>.js` 에서 온다 — 역할이 바뀌면 그 파일과 이 표를 같이 고친다.
 
-## 필수 기술 요소 (2개 이상)
+## 필수 기술 요소 (2개 이상 → 4개)
 
 | 기술 요소 | 사용 | 어디에 |
 |---|---|---|
-| AI Agent | ☐ | |
-| RAG (검색 증강 생성) | ☐ | |
-| 멀티모달 AI | ☐ | |
-| 자동화 워크플로우 | ☐ | |
-| Long-term Memory | ☐ | |
+| AI Agent | ✅ | 공문 판별 → 추출 → 근거 → 답장 판단, 알림 도구 호출 (`backend/app/agent.py`) |
+| RAG (검색 증강 생성) | ✅ | 국가법령정보·정부24 안내를 찾아 근거로 인용 (`backend/app/rag.py`) |
+| 멀티모달 AI | ✅ | 사진 속 표·도장·뒷면을 읽고 좌표까지 뽑기 (`backend/app/extract.py`) |
+| 자동화 워크플로우 | ✅ | n8n 기한 D-3·D-day 알림, 손주 모드 링크 (`automation/n8n/`) |
+| Long-term Memory | ☐ | 쓰지 않는다 — 공문은 개인정보라 저장할수록 위험하다 |
 
 ## 기술 스택 — 선택과 이유
 
 | 영역 | 선택 | 대안 | 선정 이유 |
 |---|---|---|---|
-| AI | | | |
-| Backend | | | |
-| Frontend | | | |
-| 배포 | | | |
-| 자동화 | | | |
+| AI | 비전 LLM API + 임베딩 API | OCR 엔진 + 텍스트 LLM | 사진 이해와 좌표 추출을 한 번에 한다 |
+| Backend | Python FastAPI | Flask | A 과정의 Python 그대로, 입력·출력 모양을 Pydantic 으로 고정한다 |
+| RAG | Chroma | Pinecone | 설치가 가볍고 법령 문서 수천 건 규모에 충분하다 |
+| Frontend | HTML · CSS · JS(모바일 우선) | React | 어르신이 앱 설치 없이 링크 하나로 연다, 빌드가 없다 |
+| 배포 | Render(백엔드) · Vercel(프론트) | 자체 서버 | 무료 티어로 외부 접속 주소를 바로 낸다 |
+| 자동화 | n8n | 직접 짠 스케줄러 | B1-3 노코드 자동화에서 쓴 도구라 알림 흐름을 바로 짠다 |
 
 ## 시스템 아키텍처
 
-(다이어그램 — `docs/02-기능명세.md` 에 정본을 두고 여기엔 그림 한 장)
+아래 그림은 사진 한 장이 해독 결과가 되기까지의 흐름이다. 정본은 [docs/02-기능명세.md](docs/02-기능명세.md).
 
-## 실행 방법
-
-홈페이지 뼈대는 빌드가 없다.
-
-```bash
-# 방법 1 — 파일을 바로 연다
-open index.html            # Windows: start index.html
-
-# 방법 2 — 로컬 서버(권장, 브라우저 캐시 문제 없음)
-python3 -m http.server 8000
-# → http://localhost:8000
+```
+[모바일 웹 web/] ──사진──▶ [FastAPI backend/]
+                              │ ① redact   개인정보 가림
+                              │ ② agent    판별 → 추출(extract) → 근거(rag) → 답장 판단
+                              ▼
+                        Decoded JSON ──▶ 3색 표시 · 할 일 카드 · 근거 링크
+                              └─ 기한 ──▶ [n8n] ──▶ D-3·D-day 알림
 ```
 
-서비스 코드의 실행 방법은 스택이 정해지면 여기에 적는다.
+## 준비물
+
+- Python 3.11 이상 (`python3 --version` 으로 확인)
+- Git, 그리고 이 저장소에 초대된 GitHub 계정(초대 메일에서 수락)
+- 웹 브라우저(크롬 권장)
+- LLM API 키는 **없어도 된다** — 없으면 샘플 모드로 돈다. 진짜 해독을 시험할 때만 `backend/.env` 에 넣는다(커밋 금지)
+
+## 따라 하기
+
+1. 저장소를 받는다. 아래 명령은 내 컴퓨터에 폴더 하나를 만든다.
+   ```bash
+   git clone https://github.com/dicia-jhoh/codyssey-m3-final.git
+   cd codyssey-m3-final
+   ```
+2. 백엔드를 설치하고 테스트를 돌린다. 가상환경(`.venv`)을 만들어 이 프로젝트 전용으로 설치한다.
+   ```bash
+   cd backend
+   python3 -m venv .venv
+   source .venv/bin/activate          # Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   pytest                             # 전부 passed 면 성공
+   ```
+3. 백엔드 서버를 띄운다. 켜 두면 http://localhost:8000/docs 에서 API 를 눌러 볼 수 있다.
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+4. 새 터미널에서 서비스 화면을 띄운다. 브라우저로 http://localhost:5500 을 열고 아무 사진이나 올리면 샘플 해독 결과가 나온다.
+   ```bash
+   python3 -m http.server 5500 --directory web
+   ```
+5. 팀 홈페이지는 저장소 맨 위 폴더에서 띄운다. http://localhost:8001 을 연다.
+   ```bash
+   python3 -m http.server 8001
+   ```
+6. 내 일을 시작한다. 브랜치를 만들고, 위 「내 파일」만 고치고, PR 을 올린다 — 자세한 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 배포
 
@@ -72,28 +108,41 @@ python3 -m http.server 8000
 
 | 산출물 | 위치 | 상태 |
 |---|---|---|
-| 기획서 | [docs/01-기획서.md](docs/01-기획서.md) | 틀만 |
-| 기능 요구 명세서·아키텍처 | [docs/02-기능명세.md](docs/02-기능명세.md) | 틀만 |
-| AI 설계(프롬프트·Agent·RAG) | [docs/03-AI-설계.md](docs/03-AI-설계.md) | 틀만 |
-| 사용자 테스트(5명 이상) | [docs/04-사용자테스트.md](docs/04-사용자테스트.md) | 틀만 |
-| 발표 자료 | [docs/05-발표.md](docs/05-발표.md) | 틀만 |
+| 기획서 | [docs/01-기획서.md](docs/01-기획서.md) | 확정 |
+| 기능 요구 명세서·아키텍처 | [docs/02-기능명세.md](docs/02-기능명세.md) | 초안 |
+| AI 설계(프롬프트·Agent·RAG) | [docs/03-AI-설계.md](docs/03-AI-설계.md) | 초안 |
+| 사용자 테스트(5명 이상) | [docs/04-사용자테스트.md](docs/04-사용자테스트.md) | 설계만 |
+| 발표 자료 | [docs/05-발표.md](docs/05-발표.md) | 순서만 |
+| 서비스 | `backend/` · `web/` | 뼈대(샘플 모드) |
 | 서비스 배포 | 위 표 | 미착수 |
 
 ## AI 윤리
 
-- 서비스가 만든 글·이미지에는 **AI 생성 결과임을 화면에 표시**한다.
-- 개인정보를 받으면 동의를 먼저 받고, 저장소에는 올리지 않는다(`.env`·사용자 데이터는 `.gitignore`).
+- 모든 풀이 화면에 **「AI 풀이 — 원문을 함께 확인하세요」** 를 표시한다.
+- 주민등록번호·계좌번호는 **LLM 에 보내기 전에** 가린다(`backend/app/redact.py`).
+- 사진 원본은 처리가 끝나면 지운다. 실물 공문 사진은 저장소에 올리지 않는다(`data/testset/images/` 는 `.gitignore`).
 - 사용자 테스트 기록에는 실명 대신 `사용자 1` 처럼 적는다.
+- 이 저장소의 문서·코드 초안은 AI(Claude)가 쓰고 팀이 검토했다. 이후 AI 가 쓴 부분은 커밋·PR 에 적는다.
 
 ## 저장소 구조
 
 ```
-index.html              팀 홈페이지(빌드 없음)
-assets/css/             tokens.css(색·글자 크기) · site.css(배치)
-assets/js/              render.js(content → 화면) · constellation.js(첫 화면 별자리)
-content/site.js         팀 공용 내용 — 서비스 이름·문제·기술·결과물·피드백
-content/members/*.js    한 사람에 한 파일 — 역할·담당·PR·주제 후보
-docs/                   미션 산출물 문서
+backend/                FastAPI — app/(main·agent·schema·extract·rag·redact·sample), tests/
+web/                    서비스 화면(모바일 웹, 빌드 없음)
+automation/n8n/         기한 알림 워크플로우
+data/testset/           공문 테스트셋 라벨(사진은 커밋하지 않는다)
+docs/                   미션 산출물 문서, plan/ = 제출한 기획서 원본
+index.html · assets/ · content/   팀 홈페이지(빌드 없음)
 ```
 
-함께 작업하는 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md).
+## 용어 사전
+
+- **공문**: 관공서·학교·공단이 보내는 고지서, 안내문, 가정통신문을 통틀어 이르는 말
+- **해독**: 공문을 쉬운 말로 풀고 할 일(금액·기한·서류)을 뽑아내는 일
+- **멀티모달**: 글자뿐 아니라 사진 같은 다른 형태의 입력도 이해하는 AI
+- **RAG**: 답하기 전에 외부 문서(여기선 법령)를 찾아 근거로 붙이는 방식
+- **AI Agent**: 목표를 받으면 단계를 스스로 정하고 도구를 불러 끝까지 처리하는 AI 프로그램
+- **샘플 모드**: LLM 키가 없을 때 가짜 공문 해독 결과를 돌려주는 동작. 화면에 배너로 알린다
+- **FastAPI**: Python 으로 웹 API 서버를 만드는 도구
+- **n8n**: 여러 서비스를 이어 자동으로 돌리는 노코드 도구
+- **PR(Pull Request)**: 내 브랜치의 변경을 main 에 합쳐 달라고 요청하는 것. 기여 기록이 된다

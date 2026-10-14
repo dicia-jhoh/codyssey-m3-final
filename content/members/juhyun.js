@@ -3,16 +3,18 @@ window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.juhyun = {
   name: "오주현",
   github: "dicia-jhoh", // GitHub 아이디
-  role: "", // 예: "PM / Backend", "Frontend", "AI / Data"
+  role: "PM · AI Agent", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
-    // 담당 업무 한 줄씩. 예: "RAG 파이프라인 — 문서 임베딩·검색"
+    "일정·이슈 관리, PR 리뷰와 모듈 통합",
+    "Agent 파이프라인 — 판별 → 추출 → 근거 → 답장 판단 (backend/app/agent.py)",
+    "프롬프트 JSON 스키마 (backend/app/schema.py)",
   ],
   prs: [
     // 내가 올린 PR 주소
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
-    title: "",
-    problem: "", // 누가, 어떤 상황에서, 무엇 때문에 곤란한가
+    title: "또박또박 — AI 공문 해독기 (채택)",
+    problem: "어르신·결혼이주민이 고지서·안내문을 받고도 금액·기한·할 일을 몰라 가산금을 내고 혜택을 놓친다", // 누가, 어떤 상황에서, 무엇 때문에 곤란한가
   },
 };
