@@ -21,7 +21,7 @@
 |------|------|-----------|---------|--------|
 | 오주현(팀장) | PM · AI Agent | 일정·PR 리뷰·통합, Agent 4단계, 프롬프트 JSON 스키마 | `backend/app/agent.py` · `schema.py` | [@dicia-jhoh](https://github.com/dicia-jhoh) |
 | 황지영 | 멀티모달 추출 | 비전 LLM 추출·파싱, 3색 좌표, 금액·날짜 이중 확인 | `backend/app/extract.py` | [@ppungee-maker](https://github.com/ppungee-maker) |
-| 이정관 | Backend · 배포 · 자동화 | FastAPI, Render·Vercel 배포, n8n 기한 알림 | `backend/app/main.py` · `automation/` | [@ljk-cidy](https://github.com/ljk-cidy) |
+| 이정관 | Backend · 배포 · 자동화 | FastAPI, OCI 배포, n8n 기한 알림 | `backend/app/main.py` · `automation/` | [@ljk-cidy](https://github.com/ljk-cidy) |
 | 송유영 | Frontend | 모바일 화면, 3색 오버레이, 할 일 카드, 손주 모드 | `web/` | [@youyu10012-glitch](https://github.com/youyu10012-glitch) |
 | 김기훈 | RAG 데이터 · 품질 | 법령·정부24 수집과 근거 검색, 테스트셋 30장, 정확도·설문 | `backend/app/rag.py` · `data/testset/` | [@duplgabszin](https://github.com/duplgabszin) |
 
@@ -45,7 +45,7 @@
 | Backend | Python FastAPI | Flask | A 과정의 Python 그대로, 입력·출력 모양을 Pydantic 으로 고정한다 |
 | RAG | Chroma | Pinecone | 설치가 가볍고 법령 문서 수천 건 규모에 충분하다 |
 | Frontend | HTML · CSS · JS(모바일 우선) | React | 어르신이 앱 설치 없이 링크 하나로 연다, 빌드가 없다 |
-| 배포 | Render(백엔드) · Vercel(프론트) | 자체 서버 | 무료 티어로 외부 접속 주소를 바로 낸다 |
+| 배포 | OCI 서버 + systemd | Render · Vercel | 팀이 이미 쓰는 OCI 서버에 올려 화면과 API 를 주소 하나로 낸다(무료, 잠들지 않음) |
 | 자동화 | n8n | 직접 짠 스케줄러 | B1-3 노코드 자동화에서 쓴 도구라 알림 흐름을 바로 짠다 |
 
 ## 시스템 아키텍처
@@ -87,7 +87,8 @@
    ```bash
    uvicorn app.main:app --reload
    ```
-4. 새 터미널에서 서비스 화면을 띄운다. 브라우저로 http://localhost:5500 을 열고 아무 사진이나 올리면 샘플 해독 결과가 나온다.
+4. 브라우저로 http://localhost:8000 을 연다. 백엔드가 서비스 화면(`web/`)도 같이 내준다. 아무 사진이나 올리면 샘플 해독 결과가 나온다.
+   화면만 고칠 땐 새 터미널에서 아래처럼 따로 띄워도 된다(그때도 API 는 8000 을 쓴다).
    ```bash
    python3 -m http.server 5500 --directory web
    ```
@@ -99,10 +100,12 @@
 
 ## 배포
 
+배포 방법과 새 버전 올리기는 [deploy/README.md](deploy/README.md).
+
 | 대상 | 주소 |
 |---|---|
-| 서비스 | (미정) |
-| 팀 홈페이지 | (미정) |
+| 서비스(화면 + API) | http://129.225.184.224:8035/ |
+| 팀 홈페이지 | http://129.225.184.224:8037/ |
 
 ## 결과
 
@@ -114,7 +117,7 @@
 | 사용자 테스트(5명 이상) | [docs/04-사용자테스트.md](docs/04-사용자테스트.md) | 설계만 |
 | 발표 자료 | [docs/05-발표.md](docs/05-발표.md) | 순서만 |
 | 서비스 | `backend/` · `web/` | 뼈대(샘플 모드) |
-| 서비스 배포 | 위 표 | 미착수 |
+| 서비스 배포 | 위 표 · [deploy/](deploy/README.md) | OCI 배포됨(샘플 모드) |
 
 ## AI 윤리
 
@@ -128,7 +131,8 @@
 
 ```
 backend/                FastAPI — app/(main·agent·schema·extract·rag·redact·sample), tests/
-web/                    서비스 화면(모바일 웹, 빌드 없음)
+web/                    서비스 화면(모바일 웹, 빌드 없음) — 백엔드가 같이 내준다
+deploy/                 OCI 배포(systemd 서비스 파일, 절차)
 automation/n8n/         기한 알림 워크플로우
 data/testset/           공문 테스트셋 라벨(사진은 커밋하지 않는다)
 docs/                   미션 산출물 문서, plan/ = 제출한 기획서 원본

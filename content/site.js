@@ -32,19 +32,19 @@ window.SITE = {
     { part: "RAG", pick: "Chroma", why: "설치가 가볍고 법령 문서 수천 건 규모에 충분하다" },
     { part: "자동화", pick: "n8n", why: "B1-3 노코드 자동화에서 쓴 도구라 알림 흐름을 바로 짠다" },
     { part: "Frontend", pick: "HTML · CSS · JS(모바일 우선)", why: "어르신이 앱 설치 없이 링크 하나로 연다" },
-    { part: "배포", pick: "Render · Vercel", why: "무료 티어로 외부 접속 주소를 바로 낸다" },
+    { part: "배포", pick: "OCI 서버 + systemd", why: "팀이 쓰는 OCI 서버에 올려 화면과 API 를 주소 하나로 낸다" },
   ],
 
   // 최종 결과물 여섯 가지
   deliverables: {
     plan: true,      // 기획서 — docs/01-기획서.md
     spec: false,     // 기능 요구 명세서·아키텍처 — docs/02-기능명세.md
-    service: false,  // AI 서비스 구현
+    service: true,   // AI 서비스 구현
     repo: true,      // GitHub 저장소 — 이 저장소
     slides: false,   // 발표 자료 — docs/05-발표.md
-    deploy: false,   // 외부 접근 가능한 배포
+    deploy: true,    // 외부 접근 가능한 배포
   },
-  deployUrl: "",
+  deployUrl: "http://129.225.184.224:8035/",
 
   // 실사용자 피드백 — 최소 5건. 이름 대신 "사용자 1" 처럼 적는다(개인정보)
   feedback: [

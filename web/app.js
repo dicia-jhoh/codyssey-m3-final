@@ -1,5 +1,6 @@
 // 담당: 송유영. 사진 → POST /decode → 3색 표시 · 할 일 카드 · 근거
-const API_BASE = "http://localhost:8000"; // 배포하면 Render 주소로 바꾼다
+// 백엔드가 화면을 같이 내주면(배포·localhost:8000) 같은 주소, 화면만 따로 띄우면(5500) 로컬 백엔드
+const API_BASE = location.port === "5500" ? "http://localhost:8000" : "";
 
 const $ = (id) => document.getElementById(id);
 

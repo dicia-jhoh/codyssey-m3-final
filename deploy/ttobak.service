@@ -1,0 +1,18 @@
+# 또박또박 서비스(화면 + API) — OCI mc-osaka-1, 포트 8035
+# 설치: sudo cp deploy/ttobak.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now ttobak
+[Unit]
+Description=ttobak (또박또박 — AI 공문 해독기, FastAPI + web)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/codyssey-m3-final/backend
+# LLM_API_KEY 는 이 파일(서버에만 있음)에 둔다. 없으면 샘플 모드
+EnvironmentFile=-/home/ubuntu/codyssey-m3-final/backend/.env
+ExecStart=/home/ubuntu/codyssey-m3-final/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8035
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
