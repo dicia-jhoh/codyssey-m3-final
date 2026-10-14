@@ -6,3 +6,7 @@ node_modules/
 dist/
 .DS_Store
 *.log
+.venv/
+.pytest_cache/
+# 실물 공문 사진은 개인정보 — 저장소에 올리지 않는다
+data/testset/images/
