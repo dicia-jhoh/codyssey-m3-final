@@ -6,7 +6,7 @@ window.MEMBERS.jeonggwan = {
   role: "Backend · 배포 · 자동화", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
     "FastAPI 엔드포인트 (backend/app/main.py)",
-    "Render·Vercel 배포",
+    "OCI 배포 (deploy/)",
     "n8n 기한 알림 흐름 (automation/n8n/)",
   ],
   prs: [

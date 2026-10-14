@@ -23,3 +23,9 @@ def test_decode_sample_mode(monkeypatch):
 def test_decode_rejects_non_image():
     r = client.post("/decode", files={"file": ("a.txt", b"hi", "text/plain")})
     assert r.status_code == 400
+
+
+def test_root_serves_web():
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "또박또박" in r.text
