@@ -3,9 +3,11 @@ window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.juhyun = {
   name: "오주현",
   github: "dicia-jhoh", // GitHub 아이디
-  role: "", // 예: "PM / Backend", "Frontend", "AI / Data"
+  role: "PM · AI Agent", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
-    // 담당 업무 한 줄씩. 예: "RAG 파이프라인 — 문서 임베딩·검색"
+    "일정·이슈 관리, PR 리뷰와 모듈 통합",
+    "Agent 파이프라인 — 판별 → 추출 → 근거 → 답장 판단 (backend/app/agent.py)",
+    "프롬프트 JSON 스키마 (backend/app/schema.py)",
   ],
   prs: [
     // 내가 올린 PR 주소

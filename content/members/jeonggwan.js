@@ -3,9 +3,11 @@ window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.jeonggwan = {
   name: "이정관",
   github: "ljk-cidy", // GitHub 아이디
-  role: "", // 예: "PM / Backend", "Frontend", "AI / Data"
+  role: "Backend · 배포 · 자동화", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
-    // 담당 업무 한 줄씩. 예: "RAG 파이프라인 — 문서 임베딩·검색"
+    "FastAPI 엔드포인트 (backend/app/main.py)",
+    "Render·Vercel 배포",
+    "n8n 기한 알림 흐름 (automation/n8n/)",
   ],
   prs: [
     // 내가 올린 PR 주소
