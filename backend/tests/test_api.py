@@ -25,7 +25,19 @@ def test_decode_rejects_non_image():
     assert r.status_code == 400
 
 
-def test_root_serves_web():
+def test_root_serves_homepage():
     r = client.get("/")
     assert r.status_code == 200
-    assert "또박또박" in r.text
+    assert 'id="sky"' in r.text  # 팀 홈페이지(별자리)
+    assert client.get("/content/site.js").status_code == 200
+
+
+def test_app_serves_service_screen():
+    r = client.get("/app/")
+    assert r.status_code == 200
+    assert 'id="photo"' in r.text  # 사진 올리기 화면
+
+
+def test_repo_files_not_exposed():
+    for path in ("/backend/.env.example", "/backend/app/main.py", "/README.md", "/.gitignore"):
+        assert client.get(path).status_code == 404, path

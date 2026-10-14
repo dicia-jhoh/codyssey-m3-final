@@ -12,19 +12,27 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ffffff'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='none' stroke='%23d7263d' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&family=Nanum+Pen+Script&display=swap">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 20 L12 3 L21 20 Z' fill='%238052ff'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/site.css">
 </head>
 <body>
-  <a class="skip" href="#top">본문으로 건너뛰기</a>
+  <canvas id="sky" aria-hidden="true"></canvas>
 
   <header class="nav">
-    <a class="brand" href="#top" data-slot="brand">또박또박</a>
+    <a class="brand" href="#top" aria-label="맨 위로">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#8052ff"/>
+            <stop offset="1" stop-color="#15846e"/>
+          </linearGradient>
+        </defs>
+        <path d="M3 20 L12 3 L21 20 Z" fill="url(#mark)"/>
+      </svg>
+      <span data-slot="brand">M3 Final</span>
+    </a>
     <nav class="nav-links" aria-label="섹션">
       <a href="#intent">기획의도</a>
       <a href="#features">기능</a>
@@ -33,119 +41,144 @@
       <a href="#schedule">일정</a>
       <a href="#effects">기대효과</a>
     </nav>
-    <a class="btn" data-slot="open" href="#">서비스 열어 보기</a>
+    <a class="btn btn-ghost" data-slot="open" href="#">서비스 열어 보기</a>
   </header>
 
   <main id="top">
-    <!-- 첫 화면: 고지서 한 장 위에 빨간펜이 지나간다(assets/js/redpen.js). 글은 content/site.js 의 hero -->
-    <section class="hero" aria-labelledby="hero-q">
+    <!-- 첫 화면: 별자리 다섯 덩어리 = 팀원 다섯 명. 글은 content/site.js 의 name·oneLiner -->
+    <section class="hero">
       <div class="hero-copy">
-        <h1 class="hero-q" id="hero-q" data-slot="question"></h1>
-        <p class="hero-a" data-slot="answer"></p>
+        <p class="label">코디세이 AI 네이티브 대전, M3 Final Project</p>
+        <h1 class="display" data-slot="name"></h1>
+        <p class="lede" data-slot="oneLiner"></p>
         <p class="hero-actions">
-          <a class="btn btn-big" data-slot="open2" href="#">사진 올려 보기</a>
+          <a class="btn" data-slot="open2" href="#">사진 올려 보기</a>
           <a class="link" data-slot="plan" href="#">기획서 PDF</a>
         </p>
-        <p class="hero-legend" aria-label="색의 뜻">
-          <span class="pen money">빨강은 낼 돈</span>
-          <span class="pen deadline">파랑은 기한</span>
-          <span class="pen document">초록은 챙길 서류</span>
-        </p>
-      </div>
-      <div class="desk">
-        <article class="doc" data-slot="doc" aria-label="예시 공문"></article>
-        <div class="todo-card" data-slot="todo" aria-live="polite"></div>
+        <ul class="legend" data-slot="legend" aria-label="팀원"></ul>
       </div>
     </section>
 
     <section class="band" id="intent" aria-labelledby="intent-h">
-      <h2 class="h" id="intent-h">기획의도</h2>
-      <p class="lead" data-slot="problem"></p>
-      <ul class="why" data-slot="why"></ul>
-      <div class="compare">
-        <div class="side">
-          <p class="side-head">지금</p>
-          <div class="scene" data-slot="sceneBefore"></div>
-          <figure class="phone">
-            <figcaption class="sr">지금 버티는 방법 — 자녀에게 묻는 대화</figcaption>
-            <ol class="chat" data-slot="chat"></ol>
-          </figure>
+      <div class="split">
+        <div>
+          <h2 class="h" id="intent-h" data-slot="question"></h2>
         </div>
-        <div class="side">
-          <p class="side-head">또박또박</p>
-          <div class="scene" data-slot="sceneAfter"></div>
-          <figure class="phone phone-after">
-            <figcaption class="sr">또박또박을 쓰면 — 할 일이 바로 보인다</figcaption>
-            <div class="after" data-slot="after"></div>
-          </figure>
+        <div class="split-body">
+          <p class="label">기획의도</p>
+          <p class="body" data-slot="problem"></p>
+          <ul class="why" data-slot="why"></ul>
         </div>
       </div>
+      <div class="scenes" data-slot="scenes"></div>
       <p class="insight" data-slot="insight"></p>
-      <dl class="form-rows" data-slot="users"></dl>
+      <ol class="pitches" data-slot="users"></ol>
     </section>
 
     <section class="band" id="features" aria-labelledby="features-h">
-      <h2 class="h" id="features-h">핵심 기능</h2>
-      <table class="form-table">
-        <caption class="sr">또박또박 핵심 기능 다섯 가지</caption>
-        <thead><tr><th scope="col">기능</th><th scope="col">무엇을 하나</th><th scope="col"><span class="sr">모양</span></th></tr></thead>
-        <tbody data-slot="features"></tbody>
-      </table>
+      <div class="split split-rev">
+        <div class="split-body">
+          <p class="label">핵심 기능</p>
+          <p class="body">공문을 줄이지 않는다. 찍은 원본 위에 색 세 가지로 긋는다 —
+            <span class="pen" style="--c:var(--pen-money)">빨강은 낼 돈</span>,
+            <span class="pen" style="--c:var(--pen-deadline)">파랑은 기한</span>,
+            <span class="pen" style="--c:var(--pen-document)">초록은 챙길 서류</span>.</p>
+        </div>
+        <div>
+          <h2 class="h" id="features-h">원본 위에<br>그어 준다</h2>
+        </div>
+      </div>
+      <ol class="pitches" data-slot="features"></ol>
+    </section>
+
+    <section class="band" id="tech" aria-labelledby="tech-h">
+      <div class="split split-rev">
+        <div class="split-body">
+          <p class="label">필수 요건</p>
+          <p class="body">생성형 AI 또는 AI Agent 가 핵심 기능이어야 하고, 아래 다섯 가지 중
+            <strong>두 가지 이상</strong>을 서비스에 넣어야 한다.</p>
+          <p class="tally" data-slot="techTally"></p>
+        </div>
+        <div>
+          <h2 class="h" id="tech-h">다섯 중 넷을<br>쓴다</h2>
+        </div>
+      </div>
+      <ul class="tech" data-slot="tech"></ul>
     </section>
 
     <section class="band" id="ai" aria-labelledby="ai-h">
-      <h2 class="h" id="ai-h">사진 한 장이 할 일이 되기까지</h2>
-      <ol class="pipeline" data-slot="pipeline"></ol>
+      <h2 class="h" id="ai-h">사진 한 장이<br>할 일이 되기까지</h2>
+      <ol class="steps" data-slot="pipeline"></ol>
       <p class="guard" data-slot="guard"></p>
-      <div class="ai-grid">
-        <div>
-          <h3 class="h3">필수 기술 요소</h3>
-          <p class="tally" data-slot="techTally"></p>
-          <ul class="tech" data-slot="tech"></ul>
-        </div>
-        <div>
-          <h3 class="h3">기술 스택과 고른 이유</h3>
-          <dl class="stack" data-slot="stack"></dl>
-        </div>
-      </div>
+      <div class="story" data-slot="story"></div>
     </section>
 
     <section class="band" id="team" aria-labelledby="team-h">
-      <h2 class="h" id="team-h">역할분담</h2>
-      <p class="note">모든 팀원이 실질적으로 기여한다. 역할과 담당은 각자 <code>content/members/</code> 의 자기 파일에 적는다.</p>
-      <div class="sign" data-slot="team" role="list"></div>
+      <div class="split">
+        <div>
+          <h2 class="h" id="team-h">다섯 명,<br>다섯 자리</h2>
+        </div>
+        <div class="split-body">
+          <p class="label">역할분담</p>
+          <p class="body">모든 팀원이 실질적으로 기여한다. 역할·담당·PR 은 각자
+            <code>content/members/</code> 의 자기 파일에 적는다.
+            <a data-slot="contribute" href="CONTRIBUTING.md">내 자리 채우기</a></p>
+        </div>
+      </div>
+      <ul class="team" data-slot="team"></ul>
     </section>
 
     <section class="band" id="schedule" aria-labelledby="schedule-h">
-      <h2 class="h" id="schedule-h">6주 일정</h2>
-      <ol class="weeks" data-slot="schedule"></ol>
+      <div class="split split-rev">
+        <div class="split-body">
+          <p class="label">일정</p>
+          <p class="body">공문 30장을 모으는 데서 시작해, 6주째에 두 번째 사용자 테스트와 발표로 끝난다.</p>
+        </div>
+        <div>
+          <h2 class="h" id="schedule-h">6주</h2>
+        </div>
+      </div>
+      <ol class="deliverables weeks" data-slot="schedule"></ol>
     </section>
 
     <section class="band" id="effects" aria-labelledby="effects-h">
-      <h2 class="h" id="effects-h">기대효과 및 활용방안</h2>
-      <dl class="form-rows" data-slot="effects"></dl>
-      <h3 class="h3">성공 기준</h3>
-      <table class="form-table criteria">
-        <caption class="sr">성공 기준과 지금 값</caption>
-        <thead><tr><th scope="col">기준</th><th scope="col">재는 법</th><th scope="col">목표</th><th scope="col">지금</th></tr></thead>
-        <tbody data-slot="criteria"></tbody>
-      </table>
-      <h3 class="h3">활용방안</h3>
-      <ul class="uses" data-slot="uses"></ul>
+      <div class="split">
+        <div>
+          <h2 class="h" id="effects-h">놓치는 돈과<br>놓치는 혜택을 줄인다</h2>
+        </div>
+        <div class="split-body">
+          <p class="label">기대효과 및 활용방안</p>
+          <ul class="why" data-slot="uses"></ul>
+        </div>
+      </div>
+      <ol class="pitches" data-slot="effects"></ol>
+      <h3 class="h2xs criteria-h">성공 기준</h3>
+      <ol class="deliverables criteria" data-slot="criteria"></ol>
     </section>
 
     <section class="band" id="progress" aria-labelledby="progress-h">
-      <h2 class="h" id="progress-h">진행 상황</h2>
-      <ul class="checklist" data-slot="deliverables"></ul>
-      <h3 class="h3">실사용자 피드백</h3>
-      <ol class="feedback" data-slot="feedback"></ol>
+      <div class="split split-rev">
+        <div class="split-body">
+          <p class="label">최종 결과물</p>
+          <p class="body">미션이 요구하는 산출물 여섯 가지와 실사용자 피드백 다섯 건.
+            끝낸 항목은 <code>site.js</code> 의 <code>deliverables</code> 에서 <code>true</code> 로 바꾼다.</p>
+        </div>
+        <div>
+          <h2 class="h" id="progress-h">배포하고,<br>다섯 명에게 묻는다</h2>
+        </div>
+      </div>
+      <ol class="deliverables" data-slot="deliverables"></ol>
+      <div class="feedback">
+        <h3 class="h2xs">실사용자 피드백</h3>
+        <ol class="feedback-list" data-slot="feedback"></ol>
+      </div>
     </section>
   </main>
 
   <footer class="foot">
     <p>서비스가 보여 주는 풀이는 AI 가 만든 것이라 화면마다 「AI 풀이 — 원문을 함께 확인하세요」를 표시한다. 주민번호·계좌는 AI 에 보내기 전에 가린다.</p>
-    <p>이 페이지의 글과 코드 초안은 생성형 AI(Claude)로 만들고 팀이 검토했다.</p>
-    <p class="foot-links" data-slot="links"></p>
+    <p>이 페이지의 글·코드·그림 일부는 생성형 AI 로 만들고 팀이 검토했다. 그림 속 사람은 실존 인물이 아니다.</p>
+    <p class="foot-meta"><span data-slot="links"></span></p>
   </footer>
 
   <!-- 내용은 전부 content/ 에 있다. 빌드 없이 index.html 을 더블클릭해도 열리도록 모듈 대신 일반 스크립트를 쓴다 -->
@@ -156,6 +189,6 @@
   <script src="content/members/jiyoung.js"></script>
   <script src="content/members/yuyoung.js"></script>
   <script src="assets/js/render.js"></script>
-  <script src="assets/js/redpen.js"></script>
+  <script src="assets/js/constellation.js"></script>
 </body>
 </html>
