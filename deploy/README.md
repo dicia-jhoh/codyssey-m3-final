@@ -39,3 +39,9 @@ curl -s localhost:8037/health          # {"ok":true,...} 이면 성공
 ## 진짜 해독 켜기
 
 서버의 `backend/.env` 에 `LLM_API_KEY=...` 를 넣고 `sudo systemctl restart ttobak`. 이 파일은 커밋하지 않는다.
+
+## 브라우저 캐시
+
+HTML·JS·CSS 는 서버가 `Cache-Control: no-cache` 로 낸다 — 브라우저는 쓰기 전에 서버에 다시 묻고, 안 바뀌었으면 304 로 끝난다.
+2026-10-14 에 9/30 정적 페이지의 옛 `site.js`(이름 빈 칸)가 캐시에 남아 「아직 이름이 없는 AI 서비스」로 보인 일이 있어,
+`index.html` 의 스크립트·스타일 주소에 `?v=20261014b` 를 한 번 붙여 끊었다. 이후 갱신은 no-cache 가 맡으니 `?v=` 를 매번 올릴 필요는 없다.

@@ -56,7 +56,7 @@
 
   // 첫 화면
   const name = (SITE.name || "").trim();
-  $("name").textContent = name || "아직 이름이 없는 AI 서비스";
+  $("name").textContent = name || "M3 Final Project";
   $("name").classList.toggle("is-empty", !name);
   $("brand").textContent = name || "M3 Final";
   document.title = name ? `${name} · M3 Final Project` : "M3 Final Project";
