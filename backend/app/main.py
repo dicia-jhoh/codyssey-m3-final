@@ -24,6 +24,17 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def revalidate_pages(request, call_next):
+    # 글·코드가 바뀌면 바로 보이게 — 브라우저가 옛 site.js 를 캐시에서 꺼내 「이름 없는 서비스」를 보인 적이 있다.
+    # no-cache 는 「저장은 하되 쓰기 전에 서버에 물어본다」라 바뀌지 않았으면 304 로 가볍게 끝난다.
+    response = await call_next(request)
+    path = request.url.path
+    if path.endswith(("/", ".html", ".js", ".css")):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True, "sample_mode": not os.environ.get("LLM_API_KEY")}

@@ -41,3 +41,8 @@ def test_app_serves_service_screen():
 def test_repo_files_not_exposed():
     for path in ("/backend/.env.example", "/backend/app/main.py", "/README.md", "/.gitignore"):
         assert client.get(path).status_code == 404, path
+
+
+def test_pages_revalidate():
+    for path in ("/", "/content/site.js", "/assets/css/site.css", "/app/"):
+        assert client.get(path).headers.get("cache-control") == "no-cache", path
