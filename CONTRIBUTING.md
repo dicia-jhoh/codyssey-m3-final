@@ -25,7 +25,7 @@ git push -u origin jeonggwan/profile
 # GitHub 에서 Pull Request 만들기
 ```
 
-`role` 을 채우면 첫 화면 별자리에서 내 색이 선명해지고, 팀 칸이 켜진다.
+`role`·`work` 를 채우면 홈페이지 「역할분담」 결재란의 내 칸이 채워진다.
 `pitch` 에 주제 후보를 적으면 "주제 후보" 목록에 올라간다.
 
 ## 2. 규칙
@@ -47,8 +47,9 @@ git push -u origin jeonggwan/profile
 
 ## 4. 홈페이지 고치기
 
-- 색·글자 크기는 `assets/css/tokens.css` 한 곳. 레퍼런스는 Dala
-  ([styles.refero.design](https://styles.refero.design/style/e5f5f8cf-e68d-4ed1-bbf5-6b67569af648)) —
-  검정 바탕, 굵기 대신 크기로 위계, 채운 버튼은 보라 하나.
+- 색·글자 크기는 `assets/css/tokens.css` 한 곳. 콘셉트는 「빨간펜이 지나간 공문」 —
+  회청색 책상 위 흰 공문, 먹색 글자, 펜 세 자루. **빨강 = 낼 돈, 파랑 = 기한, 초록 = 챙길 서류** 는 뜻이라 장식으로 쓰지 않는다(서비스 화면 `web/` 과 같은 약속).
+- 구조는 카드 대신 공문 서식(칸 나눈 표·결재란)으로 만든다. 움직임은 첫 화면 빨간펜(`assets/js/redpen.js`) 한 번뿐이다.
+- 아직 없는 값(측정값·피드백)은 `content/site.js` 에 `example: true` 로 두면 「예시」 표시가 붙는다. 실제 값을 넣을 때 그 줄의 `example` 을 지운다.
 - 새 섹션은 `index.html` 에 `data-slot` 자리를 만들고 `assets/js/render.js` 에서 채운다.
 - 내용(글)은 HTML 에 직접 쓰지 않고 `content/` 에 둔다 — 디자인을 몰라도 글을 고칠 수 있게.
