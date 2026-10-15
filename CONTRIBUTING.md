@@ -12,6 +12,7 @@
 | 김기훈 | `content/members/kihoon.js` |
 | 황지영 | `content/members/jiyoung.js` |
 | 송유영 | `content/members/yuyoung.js` |
+| 송유진 | `content/members/youjin.js` |
 
 ```bash
 git clone https://github.com/dicia-jhoh/codyssey-m3-final.git
@@ -50,7 +51,7 @@ git push -u origin jeonggwan/profile
 - 색·글자 크기는 `assets/css/tokens.css` 한 곳. 레퍼런스는 Dala
   ([styles.refero.design](https://styles.refero.design/style/e5f5f8cf-e68d-4ed1-bbf5-6b67569af648)) —
   검정 바탕, 굵기 대신 크기로 위계, 채운 버튼은 보라 하나.
-- 첫 화면 별자리(`assets/js/constellation.js`)의 다섯 덩어리가 팀원 다섯 명이다 — 자기 파일의 `role` 을 채운 사람 색이 밝아진다.
+- 첫 화면 별자리(`assets/js/constellation.js`)의 여섯 덩어리가 팀원 여섯 명이다 — 자기 파일의 `role` 을 채운 사람 색이 밝아진다.
 - 펜 3색(`--pen-money`·`--pen-deadline`·`--pen-document`)은 뜻이 정해진 색이다: 빨강 = 낼 돈, 파랑 = 기한, 초록 = 챙길 서류. 장식으로 쓰지 않는다.
 - 아직 없는 값(측정값·피드백)은 `content/site.js` 에 `example: true` 로 두면 「예시」 표시가 붙는다. 실제 값을 넣을 때 그 줄의 `example` 을 지운다.
 - 새 섹션은 `index.html` 에 `data-slot` 자리를 만들고 `assets/js/render.js` 에서 채운다.
