@@ -8,5 +8,5 @@ dist/
 *.log
 .venv/
 .pytest_cache/
-# 실물 공문 사진은 개인정보 — 저장소에 올리지 않는다
+# 실물 고지서 사진은 개인정보 — 저장소에 올리지 않는다
 data/testset/images/

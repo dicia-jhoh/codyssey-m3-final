@@ -8,7 +8,7 @@ $("photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   $("preview").src = URL.createObjectURL(file);
-  $("status").textContent = "공문을 읽고 있어요…";
+  $("status").textContent = "고지서를 읽고 있어요…";
   $("result").hidden = true;
 
   const form = new FormData();

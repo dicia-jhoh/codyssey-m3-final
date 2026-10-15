@@ -13,7 +13,7 @@ from .schema import Decoded
 
 
 def classify(text: str) -> str:
-    """① 공문 종류 판별. 지금은 낱말로만 고른다 — LLM 판별로 바꿀 자리."""
+    """① 고지서 종류 판별. 지금은 낱말로만 고른다 — LLM 판별로 바꿀 자리."""
     for word, kind in [("납부", "고지서"), ("가정통신", "가정통신문"), ("신청", "신청서")]:
         if word in text:
             return kind

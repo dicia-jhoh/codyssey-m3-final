@@ -15,7 +15,7 @@ MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
-app = FastAPI(title="또박또박 API", description="공문 사진 → 할 일·근거")
+app = FastAPI(title="또박또박 API", description="고지서 사진 → 할 일·근거")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get("ALLOW_ORIGINS", "http://localhost:5500").split(","),

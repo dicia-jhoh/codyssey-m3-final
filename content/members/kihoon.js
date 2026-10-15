@@ -6,7 +6,7 @@ window.MEMBERS.kihoon = {
   role: "RAG 데이터 · 품질", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
     "법령·정부24 문서 수집과 근거 검색 (backend/app/rag.py)",
-    "공문 30장 테스트셋 라벨링 (data/testset/)",
+    "고지서 30장 테스트셋 라벨링 (data/testset/)",
     "정확도 측정·사용자 설문 분석",
   ],
   prs: [
