@@ -11,7 +11,7 @@
     ["rag", "RAG", "국가법령정보·정부24 안내를 찾아 풀이의 근거로 붙인다"],
     ["multimodal", "멀티모달", "구겨진 사진 속 표·도장·뒷면까지 읽고 좌표를 뽑는다"],
     ["workflow", "자동화 워크플로우", "n8n 이 기한 D-3·D-day 알림을 보낸다"],
-    ["memory", "Long-term Memory", "쓰지 않는다 — 공문은 개인정보라 저장할수록 위험하다"],
+    ["memory", "Long-term Memory", "쓰지 않는다 — 고지서는 개인정보라 저장할수록 위험하다"],
   ];
 
   const DELIVERABLES = [
