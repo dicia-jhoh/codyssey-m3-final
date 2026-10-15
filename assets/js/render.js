@@ -52,7 +52,7 @@
     sc && sc.src ? el("img", { class: cls, src: sc.src, alt: sc.alt || "", loading: "lazy", width: "960", height: "720" }) : null;
 
   const filled = (m) => Boolean(m.role && m.role.trim());
-  const color = (i) => `var(--m${i % 5})`;
+  const color = (i) => `var(--m${i % 6})`;
 
   // 첫 화면
   const name = (SITE.name || "").trim();
@@ -60,7 +60,7 @@
   $("name").classList.toggle("is-empty", !name);
   $("brand").textContent = name || "M3 Final";
   document.title = name ? `${name} · M3 Final Project` : "M3 Final Project";
-  fill("oneLiner", SITE.oneLiner || "다섯 명이 문제 하나를 골라 AI 서비스로 만들고, 배포한 뒤 실사용자 다섯 명에게 검증받는다.");
+  fill("oneLiner", SITE.oneLiner || "여섯 명이 문제 하나를 골라 AI 서비스로 만들고, 배포한 뒤 실사용자 다섯 명에게 검증받는다.");
   if (SITE.repoUrl) $("contribute").href = `${SITE.repoUrl}/blob/main/CONTRIBUTING.md`;
   for (const s of ["open", "open2"]) { const n = $(s); if (n && SITE.deployUrl) n.href = SITE.deployUrl; }
   if ($("plan")) $("plan").href = SITE.planPdf || "docs/01-기획서.md";

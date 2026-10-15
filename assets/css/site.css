@@ -265,7 +265,7 @@ strong { font-weight: 500; color: var(--bone); }
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--s5) var(--s4);
 }
 .member { cursor: default; }

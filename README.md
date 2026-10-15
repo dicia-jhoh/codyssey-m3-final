@@ -24,6 +24,7 @@
 | 이정관 | Backend · 배포 · 자동화 | FastAPI, OCI 배포, n8n 기한 알림 | `backend/app/main.py` · `automation/` | [@ljk-cidy](https://github.com/ljk-cidy) |
 | 송유영 | Frontend | 모바일 화면, 3색 오버레이, 할 일 카드, 손주 모드 | `web/` | [@youyu10012-glitch](https://github.com/youyu10012-glitch) |
 | 김기훈 | RAG 데이터 · 품질 | 법령·정부24 수집과 근거 검색, 테스트셋 30장, 정확도·설문 | `backend/app/rag.py` · `data/testset/` | [@duplgabszin](https://github.com/duplgabszin) |
+| 송유진 | UX 라이팅 · 사용자 테스트 | 쉬운 말 풀이 문체 가이드, 어르신 실사용자 테스트 진행, 시연 영상·발표 자료 | `docs/04-사용자테스트.md` · `docs/05-발표.md` | [@youjinni11](https://github.com/youjinni11) |
 
 홈페이지의 팀 칸은 `content/members/<내 id>.js` 에서 온다 — 역할이 바뀌면 그 파일과 이 표를 같이 고친다.
 

@@ -1,12 +1,13 @@
 // 첫 화면 별자리 — 외곽선 삼각형 수천 개가 모여 구름 하나가 된다.
-// 다섯 덩어리가 팀원 다섯 명이고, 자기 파일을 채운 사람의 덩어리만 제 색으로 빛난다.
+// 여섯 덩어리가 팀원 여섯 명이고, 자기 파일을 채운 사람의 덩어리만 제 색으로 빛난다.
 (function () {
   const canvas = document.getElementById("sky");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const COLORS = ["#8052ff", "#ffb829", "#1fbf9c", "#ff4fa3", "#3d8bff"];
+  const COLORS = ["#8052ff", "#ffb829", "#1fbf9c", "#ff4fa3", "#3d8bff", "#ff8a3d"];
+  const N = COLORS.length; // 덩어리 수 = 팀원 수(content/site.js 의 team)
 
   let W = 0, H = 0, DPR = 1;
   let cx = 0, cy = 0, R = 0;
@@ -40,16 +41,16 @@
 
   function seed() {
     const n = W > 900 ? 2600 : 1300;
-    // 다섯 덩어리 — 뇌처럼 가운데로 겹쳐 모인다
-    const lobes = [...Array(5)].map((_, i) => {
-      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5 + 0.3;
+    // 여섯 덩어리 — 뇌처럼 가운데로 겹쳐 모인다
+    const lobes = [...Array(N)].map((_, i) => {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / N + 0.3;
       return { x: Math.cos(a) * 0.42, y: Math.sin(a) * 0.34, s: 0.34 + (i % 2) * 0.06 };
     });
     parts = [];
     for (let k = 0; k < n; k++) {
-      const m = k % 5;
+      const m = k % N;
       // 25% 는 이웃 덩어리 쪽으로 섞어 경계를 흐린다
-      const lobe = lobes[Math.random() < 0.75 ? m : (m + 1) % 5];
+      const lobe = lobes[Math.random() < 0.75 ? m : (m + 1) % N];
       const hx = lobe.x + gauss() * lobe.s * 0.62;
       const hy = lobe.y + gauss() * lobe.s * 0.52;
       parts.push({
@@ -69,7 +70,7 @@
       y: Math.random() * H * 1.2,
       size: 1.5 + Math.random() * 2.5,
       rot: Math.random() * Math.PI * 2,
-      c: COLORS[(Math.random() * 5) | 0],
+      c: COLORS[(Math.random() * N) | 0],
       vy: -(0.05 + Math.random() * 0.15),
     }));
   }
