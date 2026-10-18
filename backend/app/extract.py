@@ -134,30 +134,21 @@ def _to_iso(y: int, mo: int, d: int) -> str | None:
         return None  # 13월·32일처럼 달력에 없는 값 — 모델이 잘못 읽은 것으로 보고 버린다
 
 
+def _dates(text: str, *, fallback_year: int):
+    """본문의 날짜를 "YYYY.MM.DD" 형식부터, 다음 "MM월 DD일" 형식 순서로 ISO 로 낸다(달력에 없으면 None)."""
+    for y, mo, d in _DATE_RE_FULL.findall(text):
+        yield _to_iso(int(y), int(mo), int(d))
+    for mo, d in _DATE_RE_MD.findall(text):
+        yield _to_iso(fallback_year, int(mo), int(d))
+
+
 def _parse_date_iso(text: str, *, fallback_year: int) -> str | None:
-    m = _DATE_RE_FULL.search(text)
-    if m:
-        y, mo, d = (int(g) for g in m.groups())
-        return _to_iso(y, mo, d)
-    m = _DATE_RE_MD.search(text)
-    if m:
-        mo, d = (int(g) for g in m.groups())
-        return _to_iso(fallback_year, mo, d)
-    return None
+    return next(_dates(text, fallback_year=fallback_year), None)
 
 
 def _document_dates(document_text: str, *, fallback_year: int) -> set[str]:
-    """본문에 실제로 등장하는 날짜를 "YYYY.MM.DD"·"MM월 DD일" 두 형식 다 모아 ISO로 정규화."""
-    dates = set()
-    for y, mo, d in _DATE_RE_FULL.findall(document_text):
-        iso = _to_iso(int(y), int(mo), int(d))
-        if iso:
-            dates.add(iso)
-    for mo, d in _DATE_RE_MD.findall(document_text):
-        iso = _to_iso(fallback_year, int(mo), int(d))
-        if iso:
-            dates.add(iso)
-    return dates
+    """본문에 실제로 등장하는 날짜를 두 형식 다 모아 ISO로 정규화."""
+    return {iso for iso in _dates(document_text, fallback_year=fallback_year) if iso}
 
 
 def _double_check(document_text: str, items: list[dict], *, fallback_year: int | None = None) -> list[Mark]:
