@@ -62,6 +62,44 @@
                               └─ 기한 ──▶ [n8n] ──▶ D-3·D-day 알림
 ```
 
+## 추출 모듈 상세 — `backend/app/extract.py` (황지영)
+
+고지서 사진 한 장이 `Mark` 목록(3색 표시 좌표)으로 바뀌는 곳. 계약은
+`def extract(image: bytes, api_key: str) -> tuple[str, list[Mark]]` 하나뿐이고,
+`Mark`는 [docs/02-기능명세.md](docs/02-기능명세.md) 「데이터 모델」의 `schema.py`가 정본이다.
+
+**동작 순서**
+1. Claude 비전에 사진을 보낸다. system prompt가 출력 형식을 JSON 스키마 하나로 강제한다
+   (`document_text` 본문 전체 + `items`: `kind`(money/deadline/document)·`text`·`value`·`bbox`).
+   자유 문장으로 받으면 좌표를 못 쓰므로, 스키마를 벗어나면 그대로 실패 취급한다.
+2. **금액·날짜 이중 확인** — money/deadline 항목의 `value`를, 같은 호출이 돌려준
+   `document_text` 본문과 정규식으로 다시 대조한다. 날짜는 `2026.10.31`(전체 숫자형)과
+   `10월 31일`(연도 없는 형식, 실제 공문에 흔함) 둘 다 인식한다. 대조에서 어긋나거나
+   달력에 없는 값(13월 등)이면 그 `Mark`를 아예 만들지 않고 뺀다 — 화면에서 그 칸만
+   색이 안 칠해지는 게 「직접 확인 필요」 상태다. `document` 종류(챙길 서류)는 금액·날짜가
+   아니라서 이중 확인 대상이 아니다.
+3. 비전 호출이 실패하거나 응답이 스키마를 안 따르면 `("", [])`을 돌려준다 —
+   `agent.py`가 이를 보고 자동으로 샘플 모드로 넘어간다(이 모듈은 예외를 던지지 않는다).
+
+**수동으로 검증해보기** — 실제 `LLM_API_KEY`가 있으면 `agent.py`/샘플 모드를 거치지 않고
+이 모듈만 바로 돌려볼 수 있다.
+```bash
+cd backend
+LLM_API_KEY=sk-... python -m app.extract <고지서사진.jpg>
+```
+
+**테스트**: `backend/tests/test_extract.py` — 실제 API 호출 없이 `_call_vision`을
+monkeypatch해서 JSON 파싱, 금액·날짜 이중 확인(두 날짜 형식·오탐 케이스 포함),
+`extract()` 성공/실패 경로, CLI 인자 처리까지 검증한다.
+
+**알려진 한계**: 실제 `LLM_API_KEY`로는 아직 한 번도 호출 검증을 안 해봤다(테스트는
+전부 mock). 김기훈의 테스트셋(`data/testset/`)이 모이면 그걸로 실제 정확도를 재야
+기능 명세의 "90% 이상" 기준 충족 여부를 알 수 있다.
+
+관련 PR: [#9](https://github.com/dicia-jhoh/codyssey-m3-final/pull/9)(기본 구현, merged) ·
+[#10](https://github.com/dicia-jhoh/codyssey-m3-final/pull/10)(날짜 형식 보강) ·
+[#11](https://github.com/dicia-jhoh/codyssey-m3-final/pull/11)(수동 검증 CLI)
+
 ## 준비물
 
 - Python 3.11 이상 (`python3 --version` 으로 확인)
