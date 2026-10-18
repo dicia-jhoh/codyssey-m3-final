@@ -92,10 +92,12 @@ function show(d) {
   $("todos").replaceChildren(
     ...d.todos.map((t) => {
       const li = document.createElement("li");
+      const due = t.due ? `${t.due}까지` : "기한 없음";
       const money = t.amount != null ? ` · ${t.amount.toLocaleString("ko-KR")}원` : "";
+      const how = t.how ? ` · ${t.how}` : "";
       li.innerHTML = `<strong></strong><span></span>`;
       li.querySelector("strong").textContent = t.title;
-      li.querySelector("span").textContent = `${t.due ?? "기한 없음"}까지${money} · ${t.how}`;
+      li.querySelector("span").textContent = `${due}${money}${how}`;
       return li;
     })
   );
