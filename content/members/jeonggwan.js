@@ -1,4 +1,4 @@
-// 이정관 — 이 파일만 고치면 페이지의 내 자리가 채워진다. 다른 사람 파일은 건드리지 않는다.
+// 이정관입니다. AI 초보라서 서툴지만 열심히 따라가겠습니다.
 window.MEMBERS = window.MEMBERS || {};
 window.MEMBERS.jeonggwan = {
   name: "이정관",
