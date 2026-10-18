@@ -10,3 +10,5 @@ dist/
 .pytest_cache/
 # 실물 고지서 사진은 개인정보 — 저장소에 올리지 않는다
 data/testset/images/
+# Chroma 영속 저장소 — 로컬 생성물, 실제 법령 데이터는 add_article()로 각자 채운다
+data/legal/chroma/
