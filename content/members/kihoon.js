@@ -10,7 +10,7 @@ window.MEMBERS.kihoon = {
     "정확도 측정·사용자 설문 분석",
   ],
   prs: [
-    // 내가 올린 PR 주소
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/31", // ppungee-maker가 요청으로 대신 작성
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
