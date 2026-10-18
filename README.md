@@ -175,10 +175,7 @@ CLI로 아무나 바로 해볼 수 있음). 김기훈의 테스트셋(`data/test
    uvicorn app.main:app --reload
    ```
 4. 브라우저로 http://localhost:8000/app/ 을 연다. 백엔드가 서비스 화면(`web/`)과 팀 홈페이지(http://localhost:8000/)도 같이 내준다. 아무 사진이나 올리면 샘플 해독 결과가 나온다.
-   화면만 고칠 땐 새 터미널에서 아래처럼 따로 띄워도 된다(그때도 API 는 8000 을 쓴다).
-   ```bash
-   python3 -m http.server 5500 --directory web
-   ```
+   화면(`web/`)을 고치면 새로고침만 하면 된다 — 서버가 파일을 그대로 읽어 낸다.
 5. 홈페이지만 고칠 땐 백엔드 없이 저장소 맨 위 폴더에서 띄워도 된다. http://localhost:8001 을 연다.
    ```bash
    python3 -m http.server 8001

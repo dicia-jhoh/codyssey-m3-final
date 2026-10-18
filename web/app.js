@@ -1,6 +1,5 @@
 // 담당: 송유영. 사진 → POST /decode → 3색 표시 · 할 일 카드 · 근거
-// 백엔드가 화면을 같이 내주면(배포·localhost:8000) 같은 주소, 화면만 따로 띄우면(5500) 로컬 백엔드
-const API_BASE = location.port === "5500" ? "http://localhost:8000" : "";
+// 백엔드가 화면을 같이 내준다(/app/) — API 는 같은 주소다
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,7 +13,7 @@ if (sharedId) {
   $("upload-section").hidden = true;
   $("photoSection").hidden = true;
   $("status").textContent = "불러오는 중…";
-  fetch(`${API_BASE}/share/${sharedId}`)
+  fetch(`/share/${sharedId}`)
     .then((r) => {
       if (!r.ok) throw new Error(r.status === 404 ? "링크가 만료됐거나 없어요" : String(r.status));
       return r.json();
@@ -39,7 +38,7 @@ $("photo").addEventListener("change", async (e) => {
   const form = new FormData();
   form.append("file", file);
   try {
-    const r = await fetch(`${API_BASE}/decode`, { method: "POST", body: form });
+    const r = await fetch("/decode", { method: "POST", body: form });
     if (!r.ok) throw new Error((await r.json()).detail || r.status);
     show(await r.json());
     $("status").textContent = "";
@@ -52,7 +51,7 @@ $("shareBtn").addEventListener("click", async () => {
   if (!currentDecoded) return;
   $("shareResult").textContent = "링크 만드는 중…";
   try {
-    const r = await fetch(`${API_BASE}/share`, {
+    const r = await fetch("/share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(currentDecoded),
