@@ -4,6 +4,31 @@ const API_BASE = location.port === "5500" ? "http://localhost:8000" : "";
 
 const $ = (id) => document.getElementById(id);
 
+let currentDecoded = null; // "가족에게 보내기"가 다시 보낼 최근 해독 결과
+
+// 손주 모드: ?share=<id> 로 열리면 사진 올리기 없이 저장된 해독 결과를 바로 보여준다.
+// 원본 사진은 공유 저장소에 아예 없다(AI 윤리 — share.py 참고) — 그래서 3색 사진
+// 오버레이 없이 글자 정보(할 일·근거)만 보여준다.
+const sharedId = new URLSearchParams(location.search).get("share");
+if (sharedId) {
+  $("upload-section").hidden = true;
+  $("photoSection").hidden = true;
+  $("status").textContent = "불러오는 중…";
+  fetch(`${API_BASE}/share/${sharedId}`)
+    .then((r) => {
+      if (!r.ok) throw new Error(r.status === 404 ? "링크가 만료됐거나 없어요" : String(r.status));
+      return r.json();
+    })
+    .then((d) => {
+      $("grandchildNotice").hidden = false;
+      show(d);
+      $("status").textContent = "";
+    })
+    .catch((err) => {
+      $("status").textContent = `열 수 없어요: ${err.message}`;
+    });
+}
+
 $("photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -23,7 +48,31 @@ $("photo").addEventListener("change", async (e) => {
   }
 });
 
+$("shareBtn").addEventListener("click", async () => {
+  if (!currentDecoded) return;
+  $("shareResult").textContent = "링크 만드는 중…";
+  try {
+    const r = await fetch(`${API_BASE}/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentDecoded),
+    });
+    if (!r.ok) throw new Error(String(r.status));
+    const { share_id } = await r.json();
+    const link = `${location.origin}${location.pathname}?share=${share_id}`;
+    $("shareResult").innerHTML = "";
+    const input = document.createElement("input");
+    input.readOnly = true;
+    input.value = link;
+    input.onclick = () => input.select();
+    $("shareResult").append("이 링크를 가족에게 보내세요: ", input);
+  } catch (err) {
+    $("shareResult").textContent = `링크를 못 만들었어요: ${err.message}`;
+  }
+});
+
 function show(d) {
+  currentDecoded = d;
   $("sample").hidden = !d.sample;
   $("aiNotice").textContent = d.ai_notice;
   $("title").textContent = d.title;
@@ -61,5 +110,8 @@ function show(d) {
       return li;
     })
   );
+
+  $("shareResult").textContent = "";
+  $("shareBtn").hidden = !!sharedId; // 손주 모드 화면에선 또 보내기 버튼을 안 띄운다
   $("result").hidden = false;
 }
