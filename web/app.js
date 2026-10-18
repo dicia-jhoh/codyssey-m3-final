@@ -60,12 +60,38 @@ $("shareBtn").addEventListener("click", async () => {
     if (!r.ok) throw new Error(String(r.status));
     const { share_id } = await r.json();
     const link = `${location.origin}${location.pathname}?share=${share_id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "또박또박 해독 결과",
+          text: "가족과 함께 확인해 주세요.",
+          url: link,
+        });
+        $("shareResult").textContent = "공유 창을 열었어요.";
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") {
+          $("shareResult").textContent = "공유를 취소했어요.";
+          return;
+        }
+      }
+    }
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("클립보드를 사용할 수 없어요");
+      await navigator.clipboard.writeText(link);
+      $("shareResult").textContent = "링크를 복사했어요. 가족에게 붙여넣어 보내세요.";
+      return;
+    } catch {
+      // Clipboard access can be unavailable outside secure browser contexts.
+    }
     $("shareResult").innerHTML = "";
+    const label = document.createElement("span");
+    label.textContent = "링크를 복사해 가족에게 보내세요: ";
     const input = document.createElement("input");
     input.readOnly = true;
     input.value = link;
     input.onclick = () => input.select();
-    $("shareResult").append("이 링크를 가족에게 보내세요: ", input);
+    $("shareResult").append(label, input);
   } catch (err) {
     $("shareResult").textContent = `링크를 못 만들었어요: ${err.message}`;
   }
