@@ -20,42 +20,92 @@ def classify(text: str) -> str:
     return "안내문"
 
 
+_MAX_PAIR_DISTANCE = 0.15  # bbox 세로 비율 기준 — 이보다 멀면 같은 항목이 아니라고 본다
+
+
 def _bbox_center_y(mark: Mark) -> float:
     return mark.bbox[1] + mark.bbox[3] / 2
 
 
-def _nearest_by_position(target: Mark, candidates: list[Mark]) -> Mark | None:
+def _nearest_within_distance(
+    target: Mark, candidates: list[Mark], *, max_distance: float
+) -> tuple[int, Mark] | None:
+    """세로 위치가 가장 가까운 (인덱스, Mark)를 돌려준다.
+
+    max_distance보다 멀면 아예 None — 틀린 짝짓기(예: 금액 옆이 아니라 문서 맨 아래
+    「이의신청 기한」이 붙는 것)가 기한 없음보다 위험하다(D-day 알림이 틀어짐).
+    """
     if not candidates:
         return None
-    return min(candidates, key=lambda c: abs(_bbox_center_y(c) - _bbox_center_y(target)))
+    nearest_idx = min(
+        range(len(candidates)),
+        key=lambda i: abs(_bbox_center_y(candidates[i]) - _bbox_center_y(target)),
+    )
+    if abs(_bbox_center_y(candidates[nearest_idx]) - _bbox_center_y(target)) > max_distance:
+        return None
+    return nearest_idx, candidates[nearest_idx]
+
+
+def _title_for(doc_type: str, *, has_money: bool) -> str:
+    """카드 종류(돈이 있는지)로 제목을 고른다 — doc_type만으로 고르면 「안내문 납부하기」
+    처럼 안 맞는 조합이 나올 수 있다."""
+    if has_money:
+        return f"{doc_type} 금액 내기"
+    if doc_type == "신청서":
+        return "신청하기"
+    return f"{doc_type} 제출하기"
 
 
 def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:
-    """money Mark 하나당 할 일 카드 하나를 만든다(②의 Mark에서 할 일 카드를 만드는 자리).
+    """Mark에서 할 일 카드를 만든다(②의 Mark에서 할 일 카드를 만드는 자리).
 
-    Mark에는 "뭘 위한 돈인지" 같은 의미 정보가 없다(그건 근거/rag.py 쪽 몫) — 그래서
-    제목은 지금은 문서 종류로만 만든다. rag 연동이 들어오면 더 구체적인 제목으로
-    교체할 수 있는 자리. 기한은 세로 위치(bbox)가 가장 가까운 deadline Mark를 짝짓는다
-    (같은 항목이면 보통 같은 줄 근처에 적혀 있다는 가정).
+    money Mark 하나당 카드 하나, 세로 위치가 가장 가깝고 _MAX_PAIR_DISTANCE 이내인
+    deadline Mark를 기한으로 짝짓는다. 어떤 money와도 짝지어지지 않은 deadline Mark도
+    카드 한 장으로 만든다(amount=None) — 신청서·가정통신문처럼 돈 없이 기한만 있는
+    문서도 할 일이다(FR-05는 납부만이 아니라 「할 일」 전체를 다룬다).
+
+    Mark에는 "뭘 위한 돈/기한인지" 같은 의미 정보가 없다(그건 근거/rag.py 쪽 몫) —
+    제목은 지금은 문서 종류 + 카드 종류로만 만든다. rag 연동이 들어오면 더 구체적인
+    제목으로 교체할 수 있는 자리.
     """
     money_marks = [m for m in marks if m.kind == "money"]
     deadline_marks = [m for m in marks if m.kind == "deadline"]
 
     todos: list[Todo] = []
+    paired = [False] * len(deadline_marks)
+
     for money in money_marks:
-        deadline = _nearest_by_position(money, deadline_marks)
+        hit = _nearest_within_distance(money, deadline_marks, max_distance=_MAX_PAIR_DISTANCE)
+        deadline_idx, deadline = hit if hit else (None, None)
+        if deadline_idx is not None:
+            paired[deadline_idx] = True
+
         try:
             amount = int(money.value)
         except ValueError:
             amount = None
+
         todos.append(
             Todo(
-                title=f"{doc_type} 납부하기",
+                title=_title_for(doc_type, has_money=True),
                 due=deadline.value if deadline else None,
                 amount=amount,
                 how="은행 또는 앱 납부",
             )
         )
+
+    for idx, deadline in enumerate(deadline_marks):
+        if paired[idx]:
+            continue
+        todos.append(
+            Todo(
+                title=_title_for(doc_type, has_money=False),
+                due=deadline.value,
+                amount=None,
+                how="",
+            )
+        )
+
     return todos
 
 
