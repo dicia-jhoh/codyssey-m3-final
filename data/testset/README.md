@@ -6,3 +6,15 @@
 - 정답은 `labels.jsonl` 에 한 줄 한 장으로 적는다. 모양은 `labels.example.jsonl` 을 따른다.
 - 이름·주소·주민번호는 정답에도 적지 않는다. 금액·기한·할 일만 적는다.
 - 정확도 = (맞힌 항목 수) ÷ (정답 항목 수). 금액은 원 단위까지, 기한은 날짜까지 같아야 맞힌 것이다.
+
+## 정확도 자동으로 재기
+
+`labels.jsonl`과 사진(`images/`)을 채우면 아래로 바로 잴 수 있다 — `backend/scripts/score_testset.py`.
+
+```bash
+cd backend
+LLM_API_KEY=sk-... python scripts/score_testset.py
+```
+
+이미지별 맞힌 항목·틀린 항목과 전체 정확도(90% 기준 달성 여부)를 출력한다. 서류·할 일은
+문장이 달라도 될 수 있어 부분 일치로 채점하고, 금액·기한은 완전 일치만 인정한다.
