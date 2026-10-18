@@ -5,7 +5,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -18,12 +17,6 @@ ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
 app = FastAPI(title="또박또박 API", description="고지서 사진 → 할 일·근거")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.environ.get("ALLOW_ORIGINS", "http://localhost:5500").split(","),
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
-)
 
 
 @app.middleware("http")
