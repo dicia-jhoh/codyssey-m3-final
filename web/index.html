@@ -18,10 +18,14 @@
   </header>
 
   <main>
-    <label class="upload">
-      고지서 사진 찍기 · 고르기
-      <input id="photo" type="file" accept="image/*" capture="environment">
-    </label>
+    <p id="grandchildNotice" class="banner notice" hidden>손주 모드 — 가족이 찍은 고지서의 해독 결과예요. 사진 원본은 공유되지 않아요.</p>
+
+    <div id="upload-section">
+      <label class="upload">
+        고지서 사진 찍기 · 고르기
+        <input id="photo" type="file" accept="image/*" capture="environment">
+      </label>
+    </div>
 
     <p id="status" role="status"></p>
     <p id="sample" class="banner" hidden>샘플 모드 — 실제 고지서가 아닙니다</p>
@@ -30,8 +34,8 @@
       <p class="ai-notice" id="aiNotice"></p>
       <h2 id="title"></h2>
 
-      <!-- 3색 빨간펜: 사진 위에 bbox 비율로 상자를 얹는다 -->
-      <div class="paper">
+      <!-- 3색 빨간펜: 사진 위에 bbox 비율로 상자를 얹는다. 손주 모드는 사진 원본이 없어서 이 구역 자체를 숨긴다 -->
+      <div class="paper" id="photoSection">
         <img id="preview" alt="올린 고지서 사진">
         <div id="marks"></div>
       </div>
@@ -42,6 +46,10 @@
 
       <h3>쉬운 말 풀이와 근거</h3>
       <ul id="basis"></ul>
+
+      <!-- 손주 모드: 해독 결과(사진 제외)를 짧은 링크로 가족에게 보낸다(FR-07) -->
+      <button id="shareBtn" type="button" class="share">가족에게 보내기</button>
+      <p id="shareResult" class="share-result"></p>
     </section>
   </main>
 
