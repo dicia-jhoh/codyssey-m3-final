@@ -10,7 +10,7 @@ window.MEMBERS.yuyoung = {
     "손주 모드 공유 화면",
   ],
   prs: [
-    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/34", // ppungee-maker가 요청으로 대신 작성
+    // 내가 올린 PR 주소
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
