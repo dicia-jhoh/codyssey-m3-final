@@ -15,7 +15,7 @@ from anthropic import Anthropic
 
 from .schema import Mark
 
-_MODEL = "claude-sonnet-5"
+_MODEL = "claude-sonnet-5-5"
 
 _SYSTEM_PROMPT = """\
 너는 한국 고지서(납부고지서·가정통신문·주민센터 안내문 등) 사진을 읽는 비전 분석기다.
