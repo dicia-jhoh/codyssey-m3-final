@@ -138,7 +138,8 @@ PM(오주현)이 코드 리뷰에서 짚어 이슈로 올려줬고, PR #15에서
 **알려진 한계**: 고쳤지만 실제 `LLM_API_KEY`로 end-to-end 재검증은 아직 못 했다(위
 CLI로 아무나 바로 해볼 수 있음). 김기훈의 테스트셋(`data/testset/`)이 모이면 그걸로
 실제 정확도를 재야 기능 명세의 "90% 이상" 기준 충족 여부를 알 수 있다. HEIC(아이폰
-기본 사진 형식)는 Claude API가 안 받아서 업로드 단계에서 변환이 필요하다(아직 미구현).
+기본 사진 형식)는 Claude API가 안 받아서 `_media_type()`이 명확한 에러로 거부한다
+(조용히 JPEG로 속여 보내던 예전 버그는 고침) — 업로드 단계에서의 실제 변환은 아직 미구현.
 
 관련 PR: [#9](https://github.com/dicia-jhoh/codyssey-m3-final/pull/9) 기본 구현 ·
 [#10](https://github.com/dicia-jhoh/codyssey-m3-final/pull/10) 날짜 형식 보강 ·
