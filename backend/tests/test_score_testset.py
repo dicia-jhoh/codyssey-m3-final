@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from app.schema import Decoded, Mark, Todo
-from scripts.score_testset import _fuzzy_match, score_one
+from scripts.score_testset import _fuzzy_match, main, score_one
+
+_EXAMPLE_LABELS = Path(__file__).resolve().parents[2] / "data" / "testset" / "example" / "labels.jsonl"
 
 
 def _decoded(**marks_and_todos) -> Decoded:
@@ -116,3 +120,35 @@ def test_score_one_matches_todo_by_due_and_amount_not_title():
 
     assert score.correct == 1
     assert score.total == 1
+
+
+def test_main_runs_end_to_end_against_committed_example_image(monkeypatch, capsys):
+    """data/testset/example/(합성 예시, 커밋됨)로 main() 전체가 실제 파일 경로를 읽고
+    채점까지 끝내는지 확인한다 — 진짜 30장이 모이기 전엔 아무도 이 CLI를 실제 이미지
+    파일로 돌려본 적이 없었다(기존 테스트는 전부 메모리 속 합성 라벨/결과만 썼다)."""
+    monkeypatch.setenv("LLM_API_KEY", "dummy")
+
+    def fake_decode(image_bytes: bytes) -> Decoded:
+        assert len(image_bytes) > 0  # 진짜 파일을 읽었는지 확인
+        return Decoded(
+            doc_type="고지서",
+            title="t",
+            plain=[],
+            sample=False,
+            marks=[
+                Mark(kind="money", text="금 48,200원", value="48200", bbox=[0, 0, 0.1, 0.1]),
+                Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1]),
+                Mark(kind="document", text="구비서류: 신분증", value="", bbox=[0, 0, 0.1, 0.1]),
+            ],
+            todos=[Todo(title="x", due="2026-10-31", amount=48200, how="")],
+            basis=[],
+        )
+
+    monkeypatch.setattr("scripts.score_testset.decode", fake_decode)
+
+    exit_code = main(["--labels", str(_EXAMPLE_LABELS)])
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "4/4 (100%)" in out
+    assert "기준 90% 달성" in out
