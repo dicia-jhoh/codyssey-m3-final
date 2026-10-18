@@ -10,7 +10,7 @@ window.MEMBERS.jiyoung = {
     "금액·날짜 이중 확인",
   ],
   prs: [
-    // 내가 올린 PR 주소
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/9",
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
