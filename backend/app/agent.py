@@ -116,7 +116,7 @@ def decode(image: bytes) -> Decoded:
 
     text, marks = extract.extract(image, api_key)
     if not text:
-        return SAMPLE  # 추출이 아직 구현 전 — 샘플로 끝까지 돈다
+        return SAMPLE  # 추출 실패(원인은 extract 가 로그에 남김) — 샘플 배너를 띄워 끝까지 돈다
 
     text = redact(text)  # 여기서부터는 가린 글자만 쓴다
     basis = [b for b in rag.find_basis(text) if b.quote]  # 근거 없는 풀이는 버린다
