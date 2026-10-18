@@ -46,6 +46,17 @@ items에서 그냥 생략한다(빈 값으로 억지로 채우지 않는다).
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
+def _media_type(image: bytes) -> str:
+    """파일 앞부분 바이트로 이미지 형식을 판별한다 — 폰 스크린샷은 PNG·WebP도 흔하다."""
+    if image.startswith(b"\x89PNG"):
+        return "image/png"
+    if image[:4] == b"RIFF" and image[8:12] == b"WEBP":
+        return "image/webp"
+    if image.startswith(b"GIF8"):
+        return "image/gif"
+    return "image/jpeg"
+
+
 def _call_vision(image: bytes, api_key: str) -> dict:
     """Claude 비전에 사진을 보내 (document_text, items) 원시 JSON을 받는다."""
     client = Anthropic(api_key=api_key)
@@ -61,7 +72,7 @@ def _call_vision(image: bytes, api_key: str) -> dict:
                         "type": "image",
                         "source": {
                             "type": "base64",
-                            "media_type": "image/jpeg",
+                            "media_type": _media_type(image),
                             "data": base64.b64encode(image).decode("ascii"),
                         },
                     },
