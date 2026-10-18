@@ -21,6 +21,7 @@ window.MEMBERS.jiyoung = {
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/22",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/29",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/38",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/36", // 기여 기록 정리(대리 작성 PR 귀속)
     // 다른 팀원 요청으로 대신 작성(기여 기록은 실제 작성자 기준 — PM #30 코멘트)
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/17", // agent.py, 오주현 영역 제안
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/18", // rag.py 배관, 김기훈 요청
