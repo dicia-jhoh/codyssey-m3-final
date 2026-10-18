@@ -17,7 +17,7 @@ def test_todos_from_marks_pairs_money_with_nearest_deadline():
         Mark(kind="document", text="신분증", value="", bbox=[0.1, 0.7, 0.5, 0.08]),
     ]
     todos = _todos_from_marks("고지서", marks)
-    assert todos == [Todo(title="고지서 납부하기", due="2026-10-31", amount=48200, how="은행 또는 앱 납부")]
+    assert todos == [Todo(title="고지서 금액 내기", due="2026-10-31", amount=48200, how="은행 또는 앱 납부")]
 
 
 def test_todos_from_marks_pairs_each_money_with_closest_deadline():
@@ -37,12 +37,40 @@ def test_todos_from_marks_pairs_each_money_with_closest_deadline():
 def test_todos_from_marks_handles_no_deadline():
     marks = [Mark(kind="money", text="금 1,000원", value="1000", bbox=[0, 0, 0.1, 0.1])]
     todos = _todos_from_marks("고지서", marks)
-    assert todos == [Todo(title="고지서 납부하기", due=None, amount=1000, how="은행 또는 앱 납부")]
+    assert todos == [Todo(title="고지서 금액 내기", due=None, amount=1000, how="은행 또는 앱 납부")]
 
 
-def test_todos_from_marks_empty_when_no_money():
+def test_todos_from_marks_empty_when_no_money_or_deadline():
     marks = [Mark(kind="document", text="신분증", value="", bbox=[0, 0, 0.1, 0.1])]
     assert _todos_from_marks("고지서", marks) == []
+
+
+def test_todos_from_marks_makes_card_for_deadline_only_document():
+    # 신청서처럼 돈 없이 기한만 있는 문서도 카드가 나와야 한다(이슈 #20-1).
+    marks = [Mark(kind="deadline", text="10월 31일까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1])]
+    todos = _todos_from_marks("신청서", marks)
+    assert todos == [Todo(title="신청하기", due="2026-10-31", amount=None, how="")]
+
+
+def test_todos_from_marks_deadline_only_title_for_non_application_doc():
+    marks = [Mark(kind="deadline", text="11월 3일까지", value="2026-11-03", bbox=[0, 0, 0.1, 0.1])]
+    todos = _todos_from_marks("가정통신문", marks)
+    assert todos[0].title == "가정통신문 제출하기"
+
+
+def test_todos_from_marks_ignores_deadline_too_far_from_money():
+    # 금액 바로 옆이 아니라 문서 맨 아래 멀리 떨어진 기한(예: 이의신청 기한)은 안 붙는다.
+    # 대신 짝 못 찾은 deadline은 자기 카드를 따로 받는다(이슈 #20-3).
+    marks = [
+        Mark(kind="money", text="금 48,200원", value="48200", bbox=[0, 0.1, 0.1, 0.05]),
+        Mark(kind="deadline", text="이의신청 기한", value="2026-12-31", bbox=[0, 0.9, 0.1, 0.05]),
+    ]
+    todos = _todos_from_marks("고지서", marks)
+    assert len(todos) == 2
+    money_todo = next(t for t in todos if t.amount == 48200)
+    assert money_todo.due is None
+    deadline_todo = next(t for t in todos if t.amount is None)
+    assert deadline_todo.due == "2026-12-31"
 
 
 def test_decode_without_api_key_returns_sample(monkeypatch):
