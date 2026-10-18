@@ -43,6 +43,21 @@ def test_repo_files_not_exposed():
         assert client.get(path).status_code == 404, path
 
 
+def test_share_round_trip():
+    decode_body = client.post("/decode", files={"file": ("a.jpg", b"fake", "image/jpeg")}).json()
+
+    share_id = client.post("/share", json=decode_body).json()["share_id"]
+    shared = client.get(f"/share/{share_id}")
+
+    assert shared.status_code == 200
+    assert shared.json() == decode_body
+
+
+def test_share_unknown_id_is_404():
+    r = client.get("/share/없는-아이디")
+    assert r.status_code == 404
+
+
 def test_pages_revalidate():
     for path in ("/", "/content/site.js", "/assets/css/site.css", "/app/"):
         assert client.get(path).headers.get("cache-control") == "no-cache", path

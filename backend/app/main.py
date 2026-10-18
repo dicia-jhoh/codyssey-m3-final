@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .agent import decode
 from .schema import Decoded
+from .share import create_share, get_share
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +50,20 @@ async def decode_photo(file: UploadFile = File(...)) -> Decoded:
         raise HTTPException(413, "사진이 너무 커요(10MB 이하)")
     # 사진은 메모리에서만 쓰고 저장하지 않는다(AI 윤리 — 동의 없이 보관 금지)
     return decode(image)
+
+
+@app.post("/share")
+def share_decoded(decoded: Decoded) -> dict:
+    """해독 결과를 짧은 링크로 공유한다(FR-07 손주 모드). 사진은 안 보내고 안 받는다."""
+    return {"share_id": create_share(decoded)}
+
+
+@app.get("/share/{share_id}", response_model=Decoded)
+def get_shared_decoded(share_id: str) -> Decoded:
+    shared = get_share(share_id)
+    if shared is None:
+        raise HTTPException(404, "링크가 만료됐거나 없는 공유예요")
+    return shared
 
 
 # 포트 하나(M3 = 8037)로 팀 홈페이지·서비스 화면·API 를 같이 낸다(CORS 불필요).
