@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from .agent import decode
 from .schema import Decoded
@@ -51,7 +52,7 @@ async def decode_photo(file: UploadFile = File(...)) -> Decoded:
     if not image:
         raise HTTPException(400, "빈 사진 파일이에요")
     # 사진은 메모리에서만 쓰고 저장하지 않는다(AI 윤리 — 동의 없이 보관 금지)
-    return decode(image)
+    return await run_in_threadpool(decode, image)
 
 
 @app.post("/share")
