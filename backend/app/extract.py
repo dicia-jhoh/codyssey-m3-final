@@ -81,6 +81,75 @@ def _parse_json(text: str) -> dict:
     return json.loads(payload)
 
 
+_AMOUNT_RE = re.compile(r"([\d][\d,]*)\s*원")
+_DATE_RE = re.compile(r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})")
+
+
+def _parse_amount_won(text: str) -> int | None:
+    m = _AMOUNT_RE.search(text)
+    return int(m.group(1).replace(",", "")) if m else None
+
+
+def _parse_date_iso(text: str) -> str | None:
+    m = _DATE_RE.search(text)
+    if not m:
+        return None
+    y, mo, d = (int(g) for g in m.groups())
+    return f"{y:04d}-{mo:02d}-{d:02d}"
+
+
+def _double_check(document_text: str, items: list[dict]) -> list[Mark]:
+    """money/deadline 항목을 document_text 본문과 교차 대조한다.
+
+    고지서의 금액·기한은 놓치면 손해로 이어지는 민감 필드라, LLM이 함께 돌려준
+    document_text에도 같은 값이 실제로 등장하는지 다시 확인한다. 어긋나면 그
+    Mark는 만들지 않고 빼서 「직접 확인 필요」 상태(화면에 색이 안 칠해짐)로 남긴다.
+    """
+    doc_amounts = {int(m.group(1).replace(",", "")) for m in _AMOUNT_RE.finditer(document_text)}
+    doc_dates = {
+        f"{int(y):04d}-{int(mo):02d}-{int(d):02d}" for y, mo, d in _DATE_RE.findall(document_text)
+    }
+
+    marks: list[Mark] = []
+    for item in items:
+        kind = item.get("kind")
+        text = item.get("text")
+        value = item.get("value")
+        bbox = item.get("bbox")
+        if kind not in ("money", "deadline", "document") or not text or not bbox or len(bbox) != 4:
+            continue  # 모양이 안 맞는 항목은 버린다 — 모델 출력은 신뢰 못 함
+
+        if kind == "money":
+            amount = _parse_amount_won(value or "") or _parse_amount_won(text)
+            if amount is None or amount not in doc_amounts:
+                continue
+            value = str(amount)
+        elif kind == "deadline":
+            date_iso = _parse_date_iso(value or "") or _parse_date_iso(text)
+            if date_iso is None or date_iso not in doc_dates:
+                continue
+            value = date_iso
+        # document 종류는 금액·날짜가 아니므로 이중 확인 대상이 아니다
+
+        marks.append(Mark(kind=kind, text=text, value=value or "", bbox=[float(x) for x in bbox]))
+
+    return marks
+
+
 def extract(image: bytes, api_key: str) -> tuple[str, list[Mark]]:
-    """(원문 글자, 표시 목록) 을 돌려준다. 아직 구현 전이라 빈 결과를 낸다."""
-    return "", []
+    """(원문 글자, 표시 목록) 을 돌려준다.
+
+    비전 LLM 호출이나 응답 파싱이 실패하면 빈 결과를 낸다 — agent.py가 이를
+    보고 샘플 모드로 끝까지 돈다(docs/03-AI-설계.md 「실패했을 때」).
+    """
+    try:
+        raw = _call_vision(image, api_key)
+    except Exception:
+        return "", []
+
+    document_text = raw.get("document_text") or ""
+    items = raw.get("items") or []
+    if not document_text:
+        return "", []
+
+    return document_text, _double_check(document_text, items)
