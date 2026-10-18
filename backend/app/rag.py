@@ -2,8 +2,8 @@
 
 할 일
 1. 국가법령정보센터·정부24 안내를 모아 조문 하나 = 청크 하나로 Chroma 에 넣는다(조문 번호는
-   메타데이터) — `add_article()`로 넣는다. 지금은 배관(이 파일)만 있고 실제 법령 데이터는
-   비어 있다.
+   메타데이터) — `add_article()`로 넣는다. 원본은 data/legal/articles.jsonl, 적재는
+   backend/scripts/load_legal_articles.py.
 2. 고지서 글자에서 「○○법 제○조」를 먼저 찾아 번호로 거르고, 그다음 문장 유사도로 고른다.
    지금은 조문 번호 인용이 있을 때만 찾는다 — 유사도 검색(인용이 없어도 비슷한 내용을
    찾는 것)은 진짜 임베딩이 필요해서 아직 배관이 없다(아래 `add_article()` 참고).
@@ -91,8 +91,7 @@ def find_basis(text: str) -> list[Basis]:
     """고지서 글자에 맞는 근거 목록을 찾는다.
 
     조문 번호 인용이 본문에 있을 때만 찾는다(유사도 검색은 아직 없음 — 모듈 docstring
-    참고). 컬렉션이 비어 있으면(아직 실제 법령 데이터 미수집) 빈 목록을 낸다 — 근거
-    없는 문장을 지어내지 않는다는 원칙 그대로.
+    참고). 컬렉션에 없는 조문이면 빈 목록을 낸다 — 근거 없는 문장을 지어내지 않는다.
 
     Chroma 쪽 실패(디스크 권한, DB 파일 깨짐 등)는 여기서 삼킨다 — agent.decode()가
     예외 처리 없이 바로 부르기 때문에, 여기서 안 막으면 근거 하나 때문에 사진 해독
@@ -100,15 +99,12 @@ def find_basis(text: str) -> list[Basis]:
     """
     try:
         collection = _collection()
-        if collection.count() == 0:
-            return []
-
         results: list[Basis] = []
         for law_name, article_no in _citations(text):
             hit = collection.get(
                 where={"$and": [{"law_name": {"$eq": law_name}}, {"article_no": {"$eq": article_no}}]}
             )
-            for doc, meta in zip(hit["documents"], hit["metadatas"]):
+            for doc, meta in zip(hit["documents"], hit["metadatas"], strict=True):
                 results.append(Basis(claim=meta["claim"], quote=doc, law=_format_law(law_name, article_no)))
 
         return results
