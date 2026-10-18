@@ -10,7 +10,15 @@ window.MEMBERS.juhyun = {
     "프롬프트 JSON 스키마 (backend/app/schema.py)",
   ],
   prs: [
-    // 내가 올린 PR 주소
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/1",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/2",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/3",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/4",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/5",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/6",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/7",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/8",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/51",
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
