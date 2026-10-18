@@ -2,7 +2,7 @@
 
 사용:
     cd backend
-    LLM_API_KEY=... python scripts/score_testset.py
+    LLM_API_KEY=... python -m scripts.score_testset
 
 labels.jsonl 모양은 data/testset/labels.example.jsonl 참고. 아직 실제 라벨 파일
 (data/testset/labels.jsonl)과 사진(data/testset/images/)이 없다 — 김기훈이 채우면
@@ -17,14 +17,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # backend/ 를 import 경로에 추가
-
-from app.agent import decode  # noqa: E402
-from app.schema import Decoded  # noqa: E402
+from app.agent import decode
+from app.schema import Decoded
 
 _DEFAULT_LABELS = Path(__file__).resolve().parents[2] / "data" / "testset" / "labels.jsonl"
 

@@ -2,7 +2,7 @@
 
 사용:
     cd backend
-    python scripts/load_legal_articles.py
+    python -m scripts.load_legal_articles
 
 Chroma DB(data/legal/chroma/)는 .gitignore 대상이라 사람마다 로컬에 따로 생긴다 —
 이 스크립트로 커밋된 articles.jsonl에서 언제든 다시 만들 수 있다. articles.jsonl에
@@ -15,9 +15,7 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # backend/ 를 import 경로에 추가
-
-from app import rag  # noqa: E402
+from app import rag
 
 _DEFAULT_ARTICLES = Path(__file__).resolve().parents[2] / "data" / "legal" / "articles.jsonl"
 
