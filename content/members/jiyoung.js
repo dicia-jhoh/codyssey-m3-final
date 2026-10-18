@@ -10,7 +10,23 @@ window.MEMBERS.jiyoung = {
     "금액·날짜 이중 확인",
   ],
   prs: [
+    // 내 담당(멀티모달 추출)
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/9",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/10",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/11",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/12",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/14",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/15",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/16",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/22",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/29",
+    // 다른 팀원 요청으로 대신 작성(기여 기록은 실제 작성자 기준 — PM #30 코멘트)
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/17", // agent.py, 오주현 영역 제안
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/18", // rag.py 배관, 김기훈 요청
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/30", // redact.py, 이정관 요청
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/31", // 법령 데이터, 김기훈 요청
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/34", // 손주 모드, 송유영 요청
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/35", // 쉬운말 가이드, 송유진 요청
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
