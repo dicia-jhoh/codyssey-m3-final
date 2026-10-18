@@ -49,14 +49,35 @@ items에서 그냥 생략한다(빈 값으로 억지로 채우지 않는다).
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
+class UnsupportedImageFormatError(ValueError):
+    """_media_type()이 처리 못 하는 형식(지금은 HEIC/HEIF)."""
+
+
+# HEIC/HEIF(ISO 기반 미디어 파일) 브랜드 코드 — ftyp 박스 뒤에 온다.
+_HEIC_BRANDS = (b"heic", b"heix", b"heim", b"heis", b"hevc", b"hevx", b"hevm", b"hevs", b"mif1", b"msf1")
+
+
 def _media_type(image: bytes) -> str:
-    """파일 앞부분 바이트로 이미지 형식을 판별한다 — 폰 스크린샷은 PNG·WebP도 흔하다."""
+    """파일 앞부분 바이트로 이미지 형식을 판별한다 — 폰 스크린샷은 PNG·WebP도 흔하다.
+
+    HEIC/HEIF(아이폰 카메라 기본 형식)는 Claude 비전 API가 못 받는다. 예전엔 여기서
+    인식 못 하는 형식을 전부 기본값 image/jpeg로 둔갑시켰다 — HEIC 사진이 "JPEG"로
+    속아서 전송되고, API가 거부하면 extract()의 광범위한 except가 그 이유를 삼켜서
+    실패 원인이 아예 안 보였다(아이폰이 주 사용 기기인 이 서비스의 핵심 입력 경로인데도).
+    지금은 HEIC를 명시적으로 걸러내 분명한 에러로 남긴다 — HEIC 변환 자체는 아직
+    구현 안 함(업로드 단계에서 변환하는 건 별도 작업, README 「추출 모듈 상세」
+    「알려진 한계」 참고).
+    """
     if image.startswith(b"\x89PNG"):
         return "image/png"
     if image[:4] == b"RIFF" and image[8:12] == b"WEBP":
         return "image/webp"
     if image.startswith(b"GIF8"):
         return "image/gif"
+    if image[4:8] == b"ftyp" and image[8:12] in _HEIC_BRANDS:
+        raise UnsupportedImageFormatError(
+            "HEIC/HEIF 사진은 아직 지원하지 않음 — 업로드 전 JPEG/PNG로 변환 필요"
+        )
     return "image/jpeg"
 
 
