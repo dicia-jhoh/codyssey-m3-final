@@ -29,6 +29,7 @@ window.MEMBERS.jiyoung = {
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/34", // 손주 모드, 송유영 요청
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/35", // 쉬운말 가이드, 송유진 요청
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/39", // n8n 스펙, 이정관 참고용
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/40", // testset 합성 예시, 김기훈 영역 제안
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
