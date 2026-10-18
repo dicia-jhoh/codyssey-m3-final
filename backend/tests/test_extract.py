@@ -2,6 +2,61 @@ from app import extract
 from app.schema import Mark
 
 
+def test_media_type_detects_png():
+    assert extract._media_type(b"\x89PNG\r\n\x1a\n...") == "image/png"
+
+
+def test_media_type_detects_webp():
+    assert extract._media_type(b"RIFF\x00\x00\x00\x00WEBP...") == "image/webp"
+
+
+def test_media_type_detects_gif():
+    assert extract._media_type(b"GIF89a...") == "image/gif"
+
+
+def test_media_type_defaults_to_jpeg():
+    assert extract._media_type(b"\xff\xd8\xff\xe0...") == "image/jpeg"
+    assert extract._media_type(b"anything-else") == "image/jpeg"
+
+
+class _FakeTextBlock:
+    type = "text"
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
+class _FakeAnthropicResponse:
+    def __init__(self, text: str) -> None:
+        self.content = [_FakeTextBlock(text)]
+
+
+class _FakeMessages:
+    def __init__(self, calls: list[dict]) -> None:
+        self._calls = calls
+
+    def create(self, **kwargs):
+        self._calls.append(kwargs)
+        return _FakeAnthropicResponse('{"document_text": "x", "items": []}')
+
+
+class _FakeAnthropicClient:
+    def __init__(self, calls: list[dict], **_kwargs) -> None:
+        self.messages = _FakeMessages(calls)
+
+
+def test_call_vision_sends_current_model_and_detected_media_type(monkeypatch):
+    calls: list[dict] = []
+    monkeypatch.setattr(extract, "Anthropic", lambda **kwargs: _FakeAnthropicClient(calls, **kwargs))
+
+    extract._call_vision(b"\x89PNG\r\n\x1a\n...", "dummy-key")
+
+    assert len(calls) == 1
+    assert calls[0]["model"] == extract._MODEL
+    image_block = calls[0]["messages"][0]["content"][0]
+    assert image_block["source"]["media_type"] == "image/png"
+
+
 def test_parse_json_handles_bare_json():
     assert extract._parse_json('{"document_text": "x", "items": []}') == {
         "document_text": "x",

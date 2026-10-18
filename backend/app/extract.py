@@ -8,6 +8,7 @@
 
 import base64
 import json
+import logging
 import re
 from datetime import date
 
@@ -15,7 +16,9 @@ from anthropic import Anthropic
 
 from .schema import Mark
 
-_MODEL = "claude-sonnet-5"
+log = logging.getLogger(__name__)
+
+_MODEL = "claude-sonnet-5-5"
 
 _SYSTEM_PROMPT = """\
 너는 한국 고지서(납부고지서·가정통신문·주민센터 안내문 등) 사진을 읽는 비전 분석기다.
@@ -46,6 +49,17 @@ items에서 그냥 생략한다(빈 값으로 억지로 채우지 않는다).
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
+def _media_type(image: bytes) -> str:
+    """파일 앞부분 바이트로 이미지 형식을 판별한다 — 폰 스크린샷은 PNG·WebP도 흔하다."""
+    if image.startswith(b"\x89PNG"):
+        return "image/png"
+    if image[:4] == b"RIFF" and image[8:12] == b"WEBP":
+        return "image/webp"
+    if image.startswith(b"GIF8"):
+        return "image/gif"
+    return "image/jpeg"
+
+
 def _call_vision(image: bytes, api_key: str) -> dict:
     """Claude 비전에 사진을 보내 (document_text, items) 원시 JSON을 받는다."""
     client = Anthropic(api_key=api_key)
@@ -61,7 +75,7 @@ def _call_vision(image: bytes, api_key: str) -> dict:
                         "type": "image",
                         "source": {
                             "type": "base64",
-                            "media_type": "image/jpeg",
+                            "media_type": _media_type(image),
                             "data": base64.b64encode(image).decode("ascii"),
                         },
                     },
@@ -175,6 +189,7 @@ def extract(image: bytes, api_key: str) -> tuple[str, list[Mark]]:
     try:
         raw = _call_vision(image, api_key)
     except Exception:
+        log.exception("비전 추출 실패 — 샘플 모드로 넘어감")
         return "", []
 
     document_text = raw.get("document_text") or ""
