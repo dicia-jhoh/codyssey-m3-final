@@ -7,7 +7,7 @@
 
 | 이름 | 내 파일 |
 |---|---|
-| 오주현 | `content/members/juhyun.js` |
+| 오주현 | `content/members/juhyeon.js` |
 | 이정관 | `content/members/jeonggwan.js` |
 | 김기훈 | `content/members/kihoon.js` |
 | 황지영 | `content/members/jiyoung.js` |
