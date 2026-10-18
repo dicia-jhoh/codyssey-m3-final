@@ -68,18 +68,46 @@
 `def extract(image: bytes, api_key: str) -> tuple[str, list[Mark]]` 하나뿐이고,
 `Mark`는 [docs/02-기능명세.md](docs/02-기능명세.md) 「데이터 모델」의 `schema.py`가 정본이다.
 
+```mermaid
+flowchart LR
+    A["고지서 사진<br/>(jpeg/png/webp/gif)"] --> B["_media_type()<br/>바이트로 형식 판별"]
+    B --> C["Claude 비전 호출<br/>(claude-sonnet-5-5)"]
+    C --> D{"JSON 스키마대로<br/>파싱됐나?"}
+    D -- 아니오 --> E["빈 결과<br/>+ log.exception()"]
+    E --> F["agent.py가<br/>샘플 모드로 폴백"]
+    D -- 예 --> G["금액·날짜<br/>이중 확인"]
+    G --> H["Mark 목록 반환"]
+```
+
 **동작 순서**
-1. Claude 비전에 사진을 보낸다. system prompt가 출력 형식을 JSON 스키마 하나로 강제한다
+1. 사진 바이트의 헤더로 실제 형식(JPEG/PNG/WebP/GIF)을 판별해 `media_type`에 정확히 넣는다
+   (`_media_type()`) — 하나로 고정해두면 폰 스크린샷(PNG)이 API에서 거절당한다.
+2. Claude 비전에 사진을 보낸다. system prompt가 출력 형식을 JSON 스키마 하나로 강제한다
    (`document_text` 본문 전체 + `items`: `kind`(money/deadline/document)·`text`·`value`·`bbox`).
    자유 문장으로 받으면 좌표를 못 쓰므로, 스키마를 벗어나면 그대로 실패 취급한다.
-2. **금액·날짜 이중 확인** — money/deadline 항목의 `value`를, 같은 호출이 돌려준
+3. **금액·날짜 이중 확인** — money/deadline 항목의 `value`를, 같은 호출이 돌려준
    `document_text` 본문과 정규식으로 다시 대조한다. 날짜는 `2026.10.31`(전체 숫자형)과
    `10월 31일`(연도 없는 형식, 실제 공문에 흔함) 둘 다 인식한다. 대조에서 어긋나거나
    달력에 없는 값(13월 등)이면 그 `Mark`를 아예 만들지 않고 뺀다 — 화면에서 그 칸만
    색이 안 칠해지는 게 「직접 확인 필요」 상태다. `document` 종류(챙길 서류)는 금액·날짜가
    아니라서 이중 확인 대상이 아니다.
-3. 비전 호출이 실패하거나 응답이 스키마를 안 따르면 `("", [])`을 돌려준다 —
+4. 비전 호출이 실패하거나 응답이 스키마를 안 따르면 `("", [])`을 돌려준다 —
    `agent.py`가 이를 보고 자동으로 샘플 모드로 넘어간다(이 모듈은 예외를 던지지 않는다).
+   실패 원인은 `log.exception()`으로 남긴다(아래 「겪은 버그」 참고).
+
+**예시 출력** — "2026년 자동차세 납부고지서, 금 48,200원, 2026.10.31까지" 한 장을
+넣으면 `extract()`가 대략 이런 걸 돌려준다(문서 전체 텍스트는 생략):
+```python
+(
+    "2026년 자동차세 납부고지서\n납부금액: 금 48,200원\n납부기한: 2026.10.31까지\n...",
+    [
+        Mark(kind="money", text="금 48,200원", value="48200", bbox=[0.62, 0.18, 0.30, 0.06]),
+        Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0.62, 0.26, 0.30, 0.06]),
+    ],
+)
+```
+`value`는 항상 다루기 쉬운 형태(금액=숫자 문자열, 날짜=`YYYY-MM-DD`)로 정규화된다 —
+화면(`web/`)이나 `agent.py`의 할 일 카드 생성이 파싱을 다시 안 해도 되게 하려는 것.
 
 **수동으로 검증해보기** — 실제 `LLM_API_KEY`가 있으면 `agent.py`/샘플 모드를 거치지 않고
 이 모듈만 바로 돌려볼 수 있다.
@@ -88,17 +116,35 @@ cd backend
 LLM_API_KEY=sk-... python -m app.extract <고지서사진.jpg>
 ```
 
-**테스트**: `backend/tests/test_extract.py` — 실제 API 호출 없이 `_call_vision`을
-monkeypatch해서 JSON 파싱, 금액·날짜 이중 확인(두 날짜 형식·오탐 케이스 포함),
-`extract()` 성공/실패 경로, CLI 인자 처리까지 검증한다.
+**테스트**: `backend/tests/test_extract.py`(29건) — 실제 API 호출 없이 동작한다.
+`_call_vision`을 통째로 가짜로 바꾼 파이프라인 테스트(JSON 파싱, 이중 확인, 성공/실패
+경로, CLI 인자 처리)에 더해, `Anthropic` 클라이언트 자체를 가짜로 바꿔서
+`messages.create`에 실제로 넘어가는 `model`·`media_type` 값까지 검증한다 — 아래 버그가
+바로 그 검증이 없어서 안 잡혔던 종류다.
 
-**알려진 한계**: 실제 `LLM_API_KEY`로는 아직 한 번도 호출 검증을 안 해봤다(테스트는
-전부 mock). 김기훈의 테스트셋(`data/testset/`)이 모이면 그걸로 실제 정확도를 재야
-기능 명세의 "90% 이상" 기준 충족 여부를 알 수 있다.
+**겪은 버그 (이슈 [#13](https://github.com/dicia-jhoh/codyssey-m3-final/issues/13))**:
+PR #9가 머지된 뒤 테스트는 전부 통과했지만, 실제 고지서 사진으로는 추출이 **한 번도
+성공한 적이 없었다** — `extract()`가 모든 예외를 삼키고 조용히 빈 결과를 내도록 설계돼
+있어서(샘플 모드 폴백용) 겉으로는 멀쩡해 보였기 때문이다. 원인은 둘:
+1. `media_type`이 `"image/jpeg"`로 고정돼 있어 PNG 사진이 API에서 거절됨
+2. 모델 ID(`claude-sonnet-5`)로 호출이 404 — 공식 문서상으로는 legacy지만 아직
+   Active라 100% 명확한 원인은 아니지만, 현재 Sonnet인 `claude-sonnet-5-5`로 교체
 
-관련 PR: [#9](https://github.com/dicia-jhoh/codyssey-m3-final/pull/9)(기본 구현, merged) ·
-[#10](https://github.com/dicia-jhoh/codyssey-m3-final/pull/10)(날짜 형식 보강) ·
-[#11](https://github.com/dicia-jhoh/codyssey-m3-final/pull/11)(수동 검증 CLI)
+PM(오주현)이 실사진으로 재현해서 이슈로 올려줬고, PR #15에서 고쳤다. 이 경험 때문에
+3번(로그)과 4번(실제 호출값 검증 테스트)을 같이 추가했다 — 다음엔 같은 종류의 실패가
+조용히 묻히지 않게.
+
+**알려진 한계**: 고쳤지만 실제 `LLM_API_KEY`로 end-to-end 재검증은 아직 못 했다(위
+CLI로 아무나 바로 해볼 수 있음). 김기훈의 테스트셋(`data/testset/`)이 모이면 그걸로
+실제 정확도를 재야 기능 명세의 "90% 이상" 기준 충족 여부를 알 수 있다. HEIC(아이폰
+기본 사진 형식)는 Claude API가 안 받아서 업로드 단계에서 변환이 필요하다(아직 미구현).
+
+관련 PR: [#9](https://github.com/dicia-jhoh/codyssey-m3-final/pull/9) 기본 구현 ·
+[#10](https://github.com/dicia-jhoh/codyssey-m3-final/pull/10) 날짜 형식 보강 ·
+[#11](https://github.com/dicia-jhoh/codyssey-m3-final/pull/11) 수동 검증 CLI ·
+[#14](https://github.com/dicia-jhoh/codyssey-m3-final/pull/14) PR #11 base 정정 ·
+[#15](https://github.com/dicia-jhoh/codyssey-m3-final/pull/15) 모델ID·이미지형식 버그 수정
+(전부 merged)
 
 ## 준비물
 
