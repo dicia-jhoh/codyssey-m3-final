@@ -6,7 +6,7 @@ window.SITE = {
   oneLiner: "사진 한 장이면 고지서 원본 위에 「얼마를 · 언제까지 · 무엇을」이 보이는 AI 고지서 해독기",
 
   // 결재란·팀 칸 순서. content/members/<id>.js 의 id 와 맞춘다
-  team: ["juhyun", "jeonggwan", "kihoon", "jiyoung", "yuyoung", "youjin"],
+  team: ["juhyeon", "jeonggwan", "kihoon", "jiyoung", "yuyoung", "youjin"],
 
   // 첫 화면 — 고지서 한 장 위에 3색 빨간펜이 지나간다. 서비스 샘플 모드와 같은 가짜 고지서다
   hero: {

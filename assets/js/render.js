@@ -156,7 +156,7 @@
   // 팀
   fill("team", ...TEAM.map((m) =>
     el("li", { class: filled(m) ? "member" : "member is-empty", "data-member": m.i, tabindex: "0", style: `--c:${color(m.i)}` },
-      el("p", { class: "member-role" }, m.role || "역할 미정", m.id === "juhyun" ? " · 팀장" : ""),
+      el("p", { class: "member-role" }, m.role || "역할 미정", m.id === "juhyeon" ? " · 팀장" : ""),
       el("p", { class: "member-name" }, m.name),
       m.github
         ? el("a", { class: "member-gh", href: `https://github.com/${m.github}` }, `@${m.github}`)
