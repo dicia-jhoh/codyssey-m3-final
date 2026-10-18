@@ -9,6 +9,7 @@
 import base64
 import json
 import re
+from datetime import date
 
 from anthropic import Anthropic
 
@@ -82,7 +83,8 @@ def _parse_json(text: str) -> dict:
 
 
 _AMOUNT_RE = re.compile(r"([\d][\d,]*)\s*원")
-_DATE_RE = re.compile(r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})")
+_DATE_RE_FULL = re.compile(r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})")
+_DATE_RE_MD = re.compile(r"(\d{1,2})월\s*(\d{1,2})일")  # "10월 31일" — 연도를 안 적는 공문이 흔함
 
 
 def _parse_amount_won(text: str) -> int | None:
@@ -90,25 +92,51 @@ def _parse_amount_won(text: str) -> int | None:
     return int(m.group(1).replace(",", "")) if m else None
 
 
-def _parse_date_iso(text: str) -> str | None:
-    m = _DATE_RE.search(text)
-    if not m:
-        return None
-    y, mo, d = (int(g) for g in m.groups())
-    return f"{y:04d}-{mo:02d}-{d:02d}"
+def _to_iso(y: int, mo: int, d: int) -> str | None:
+    try:
+        return date(y, mo, d).isoformat()
+    except ValueError:
+        return None  # 13월·32일처럼 달력에 없는 값 — 모델이 잘못 읽은 것으로 보고 버린다
 
 
-def _double_check(document_text: str, items: list[dict]) -> list[Mark]:
+def _parse_date_iso(text: str, *, fallback_year: int) -> str | None:
+    m = _DATE_RE_FULL.search(text)
+    if m:
+        y, mo, d = (int(g) for g in m.groups())
+        return _to_iso(y, mo, d)
+    m = _DATE_RE_MD.search(text)
+    if m:
+        mo, d = (int(g) for g in m.groups())
+        return _to_iso(fallback_year, mo, d)
+    return None
+
+
+def _document_dates(document_text: str, *, fallback_year: int) -> set[str]:
+    """본문에 실제로 등장하는 날짜를 "YYYY.MM.DD"·"MM월 DD일" 두 형식 다 모아 ISO로 정규화."""
+    dates = set()
+    for y, mo, d in _DATE_RE_FULL.findall(document_text):
+        iso = _to_iso(int(y), int(mo), int(d))
+        if iso:
+            dates.add(iso)
+    for mo, d in _DATE_RE_MD.findall(document_text):
+        iso = _to_iso(fallback_year, int(mo), int(d))
+        if iso:
+            dates.add(iso)
+    return dates
+
+
+def _double_check(document_text: str, items: list[dict], *, fallback_year: int | None = None) -> list[Mark]:
     """money/deadline 항목을 document_text 본문과 교차 대조한다.
 
     고지서의 금액·기한은 놓치면 손해로 이어지는 민감 필드라, LLM이 함께 돌려준
     document_text에도 같은 값이 실제로 등장하는지 다시 확인한다. 어긋나면 그
     Mark는 만들지 않고 빼서 「직접 확인 필요」 상태(화면에 색이 안 칠해짐)로 남긴다.
+
+    fallback_year: "10월 31일"처럼 연도가 없는 날짜를 만났을 때 쓸 연도(기본값: 올해).
     """
+    fallback_year = fallback_year or date.today().year
     doc_amounts = {int(m.group(1).replace(",", "")) for m in _AMOUNT_RE.finditer(document_text)}
-    doc_dates = {
-        f"{int(y):04d}-{int(mo):02d}-{int(d):02d}" for y, mo, d in _DATE_RE.findall(document_text)
-    }
+    doc_dates = _document_dates(document_text, fallback_year=fallback_year)
 
     marks: list[Mark] = []
     for item in items:
@@ -125,7 +153,9 @@ def _double_check(document_text: str, items: list[dict]) -> list[Mark]:
                 continue
             value = str(amount)
         elif kind == "deadline":
-            date_iso = _parse_date_iso(value or "") or _parse_date_iso(text)
+            date_iso = _parse_date_iso(value or "", fallback_year=fallback_year) or _parse_date_iso(
+                text, fallback_year=fallback_year
+            )
             if date_iso is None or date_iso not in doc_dates:
                 continue
             value = date_iso

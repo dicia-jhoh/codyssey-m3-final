@@ -40,6 +40,27 @@ def test_double_check_keeps_deadline_matching_document_text():
     ]
 
 
+def test_double_check_keeps_deadline_in_month_day_format():
+    # 연도 없이 "10월 31일"만 적힌 공문이 흔함 — fallback_year로 교차 대조되어야 한다.
+    marks = extract._double_check(
+        document_text="납부기한: 10월 31일까지",
+        items=[{"kind": "deadline", "text": "10월 31일까지", "value": "10월 31일", "bbox": [0, 0, 0.1, 0.1]}],
+        fallback_year=2026,
+    )
+    assert marks == [
+        Mark(kind="deadline", text="10월 31일까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1])
+    ]
+
+
+def test_double_check_ignores_calendar_invalid_date():
+    marks = extract._double_check(
+        document_text="납부기한: 13월 31일까지",
+        items=[{"kind": "deadline", "text": "13월 31일까지", "value": "13월 31일", "bbox": [0, 0, 0.1, 0.1]}],
+        fallback_year=2026,
+    )
+    assert marks == []
+
+
 def test_double_check_drops_deadline_not_found_in_document_text():
     marks = extract._double_check(
         document_text="아무 날짜도 없음",
