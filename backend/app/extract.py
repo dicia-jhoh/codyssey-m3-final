@@ -8,12 +8,15 @@
 
 import base64
 import json
+import logging
 import re
 from datetime import date
 
 from anthropic import Anthropic
 
 from .schema import Mark
+
+log = logging.getLogger(__name__)
 
 _MODEL = "claude-sonnet-5-5"
 
@@ -186,6 +189,7 @@ def extract(image: bytes, api_key: str) -> tuple[str, list[Mark]]:
     try:
         raw = _call_vision(image, api_key)
     except Exception:
+        log.exception("비전 추출 실패 — 샘플 모드로 넘어감")
         return "", []
 
     document_text = raw.get("document_text") or ""
