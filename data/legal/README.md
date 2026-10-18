@@ -105,5 +105,5 @@ permalink를 못 찾을 땐(제97조 사례처럼) 날짜/법률번호가 서로
 
 ```bash
 cd backend
-python scripts/load_legal_articles.py   # data/legal/articles.jsonl → Chroma에 적재
+python -m scripts.load_legal_articles   # data/legal/articles.jsonl → Chroma에 적재
 ```

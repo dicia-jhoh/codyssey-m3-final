@@ -13,7 +13,7 @@
 
 ```bash
 cd backend
-LLM_API_KEY=sk-... python scripts/score_testset.py
+LLM_API_KEY=sk-... python -m scripts.score_testset
 ```
 
 이미지별 맞힌 항목·틀린 항목과 전체 정확도(90% 기준 달성 여부)를 출력한다. 서류·할 일은
@@ -29,7 +29,7 @@ LLM_API_KEY=sk-... python scripts/score_testset.py
 
 ```bash
 cd backend
-LLM_API_KEY=sk-... python scripts/score_testset.py --labels ../data/testset/example/labels.jsonl
+LLM_API_KEY=sk-... python -m scripts.score_testset --labels ../data/testset/example/labels.jsonl
 ```
 
 재생성하려면 `data/testset/example/make_example.py` 참고(Pillow 필요, 평소엔 안 돌려도 됨
