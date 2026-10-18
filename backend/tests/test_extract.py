@@ -1,3 +1,5 @@
+import pytest
+
 from app import extract
 from app.schema import Mark
 
@@ -17,6 +19,23 @@ def test_media_type_detects_gif():
 def test_media_type_defaults_to_jpeg():
     assert extract._media_type(b"\xff\xd8\xff\xe0...") == "image/jpeg"
     assert extract._media_type(b"anything-else") == "image/jpeg"
+
+
+def test_media_type_rejects_heic():
+    # ftyp 박스 + heic 브랜드 — 아이폰 카메라 기본 형식. 예전엔 이것도 그냥 image/jpeg로
+    # 둔갑시켜서, API가 거부해도 이유가 안 보였다(아이폰이 주 사용 기기인데도).
+    heic_bytes = b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00..."
+
+    with pytest.raises(extract.UnsupportedImageFormatError, match="HEIC"):
+        extract._media_type(heic_bytes)
+
+
+def test_extract_falls_back_to_sample_mode_on_heic(monkeypatch):
+    # _call_vision 안에서 _media_type이 HEIC를 거부하면, extract()의 광범위한
+    # except가 이를 잡아 빈 결과를 내고(agent.py가 샘플 모드로 넘어감), 조용히
+    # image/jpeg로 속여 보내던 예전 동작으로 되돌아가지 않는다.
+    heic_bytes = b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00..."
+    assert extract.extract(heic_bytes, "dummy-key") == ("", [])
 
 
 class _FakeTextBlock:
