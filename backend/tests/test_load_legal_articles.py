@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from app import rag
-from scripts.load_legal_articles import load
+from scripts.load_legal_articles import _DEFAULT_ARTICLES, load
 
 
 @pytest.fixture(autouse=True)
@@ -55,3 +55,13 @@ def test_load_raises_on_missing_required_field(tmp_path: Path):
 
     with pytest.raises(ValueError, match="claim"):
         load(articles_path)
+
+
+def test_real_articles_file_is_well_formed_and_loadable():
+    """data/legal/articles.jsonl(실제 커밋되는 데이터)이 깨진 줄 없이 전부 로드되는지
+    확인 — 필수 필드 누락이나 JSON 문법 오류가 섞여 들어가는 걸 CI 수준에서 막는다."""
+    count = load(_DEFAULT_ARTICLES)
+    assert count >= 2  # 국민건강보험법 제80조, 지방세기본법 제55조 — 더 늘면 이 숫자도 올릴 것
+
+    assert rag.find_basis("국민건강보험법 제80조에 따라")
+    assert rag.find_basis("지방세기본법 제55조에 따라")
