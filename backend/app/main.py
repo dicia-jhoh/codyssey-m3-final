@@ -45,9 +45,11 @@ def health() -> dict:
 async def decode_photo(file: UploadFile = File(...)) -> Decoded:
     if not (file.content_type or "").startswith("image/"):
         raise HTTPException(400, "사진 파일만 올릴 수 있어요")
-    image = await file.read()
+    image = await file.read(MAX_BYTES + 1)
     if len(image) > MAX_BYTES:
         raise HTTPException(413, "사진이 너무 커요(10MB 이하)")
+    if not image:
+        raise HTTPException(400, "빈 사진 파일이에요")
     # 사진은 메모리에서만 쓰고 저장하지 않는다(AI 윤리 — 동의 없이 보관 금지)
     return decode(image)
 
