@@ -29,7 +29,8 @@ _CHROMA_DIR = Path(__file__).resolve().parents[2] / "data" / "legal" / "chroma"
 _COLLECTION_NAME = "legal_articles_dummy"
 
 # "국민건강보험법 제80조", "지방세법 제15조", "국민건강보험법 제80조의2" 같은 인용을 찾는다.
-_CITATION_RE = re.compile(r"([가-힣]+법)\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?")
+# 공문은 법 이름을 낫표로 감싸는 게 표준이라(「국민건강보험법」 제80조) 낫표도 받는다.
+_CITATION_RE = re.compile(r"「?([가-힣]+법)」?\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?")
 
 _client: chromadb.ClientAPI | None = None
 
