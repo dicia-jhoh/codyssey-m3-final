@@ -15,7 +15,7 @@ if (sharedId) {
   $("status").textContent = "불러오는 중…";
   fetch(`/share/${sharedId}`)
     .then((r) => {
-      if (!r.ok) throw new Error(r.status === 404 ? "링크가 만료됐거나 없어요" : String(r.status));
+      if (!r.ok) throw new Error(String(r.status));
       return r.json();
     })
     .then((d) => {
@@ -24,7 +24,11 @@ if (sharedId) {
       $("status").textContent = "";
     })
     .catch((err) => {
-      $("status").textContent = `열 수 없어요: ${err.message}`;
+      console.error(err);
+      $("status").textContent =
+        err.message === "404"
+          ? "링크 기한이 지났어요. 가족에게 새 링크를 받아 주세요."
+          : "지금은 열 수 없어요. 잠시 뒤 다시 열어 주세요.";
     });
 }
 
@@ -43,7 +47,8 @@ $("photo").addEventListener("change", async (e) => {
     show(await r.json());
     $("status").textContent = "";
   } catch (err) {
-    $("status").textContent = `읽지 못했어요: ${err.message}. 서버가 켜져 있는지 확인해 주세요.`;
+    console.error(err);
+    $("status").textContent = "사진을 읽지 못했어요. 밝은 곳에서 다시 찍어 올려 주세요.";
   }
 });
 
@@ -92,7 +97,8 @@ $("shareBtn").addEventListener("click", async () => {
     input.onclick = () => input.select();
     $("shareResult").append(label, input);
   } catch (err) {
-    $("shareResult").textContent = `링크를 못 만들었어요: ${err.message}`;
+    console.error(err);
+    $("shareResult").textContent = "링크를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.";
   }
 });
 
