@@ -31,6 +31,13 @@ def test_citations_distinguishes_sub_article():
     assert rag._citations("국민건강보험법 제80조의2에 따라") == [("국민건강보험법", "80의2")]
 
 
+def test_citations_accepts_corner_brackets_around_law_name():
+    assert rag._citations("「국민건강보험법」 제80조에 따라, 「질서위반행위규제법」제24조") == [
+        ("국민건강보험법", "80"),
+        ("질서위반행위규제법", "24"),
+    ]
+
+
 def test_citations_deduplicates_keeping_order():
     text = "국민건강보험법 제80조... 지방세법 제15조... 국민건강보험법 제80조"
     assert rag._citations(text) == [("국민건강보험법", "80"), ("지방세법", "15")]
