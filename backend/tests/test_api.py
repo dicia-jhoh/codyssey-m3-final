@@ -53,6 +53,11 @@ def test_share_round_trip():
     assert shared.json() == decode_body
 
 
+def test_share_rejects_oversized_body():
+    body = {"doc_type": "고지서", "title": "가" * 70_000, "plain": [], "marks": [], "todos": [], "basis": []}
+    assert client.post("/share", json=body).status_code == 413
+
+
 def test_share_unknown_id_is_404():
     r = client.get("/share/없는-아이디")
     assert r.status_code == 404

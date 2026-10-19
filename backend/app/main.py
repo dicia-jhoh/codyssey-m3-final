@@ -13,6 +13,7 @@ from .schema import Decoded
 from .share import create_share, get_share
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
+MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
@@ -51,6 +52,9 @@ async def decode_photo(file: UploadFile = File(...)) -> Decoded:
 @app.post("/share")
 def share_decoded(decoded: Decoded) -> dict:
     """해독 결과를 짧은 링크로 공유한다(FR-07 손주 모드). 사진은 안 보내고 안 받는다."""
+    # 인증 없는 공개 주소라 크기를 안 막으면 아무나 큰 JSON 으로 서버 메모리를 채운다
+    if len(decoded.model_dump_json().encode()) > MAX_SHARE_BYTES:
+        raise HTTPException(413, "공유할 내용이 너무 커요")
     return {"share_id": create_share(decoded)}
 
 
