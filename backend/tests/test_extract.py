@@ -159,6 +159,42 @@ def test_double_check_drops_malformed_item():
     assert marks == []
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        [{"document_text": "48,200원"}],
+        {"document_text": 123},
+        {"document_text": "48,200원", "items": "money"},
+    ],
+)
+def test_extract_returns_empty_or_skips_on_wrong_shape(monkeypatch, raw):
+    monkeypatch.setattr(extract, "_call_vision", lambda image, api_key: raw)
+    _, marks = extract.extract(b"fake", "key")
+    assert marks == []
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        "money",
+        {"kind": "money", "text": "48,200원", "value": "48,200원", "bbox": ["a", 0, 0, 0]},
+        {"kind": "money", "text": "48,200원", "value": "48,200원", "bbox": 0.5},
+        {"kind": "money", "text": "48,200원", "value": "48,200원", "bbox": [float("nan"), 0, 0, 0]},
+        {"kind": "money", "text": 48200, "value": "48,200원", "bbox": [0, 0, 0.1, 0.1]},
+    ],
+)
+def test_double_check_skips_wrong_shape_item(item):
+    assert extract._double_check(document_text="합계 48,200원", items=[item]) == []
+
+
+def test_double_check_accepts_numeric_value():
+    marks = extract._double_check(
+        document_text="합계 48,200원",
+        items=[{"kind": "money", "text": "48,200원", "value": 48200, "bbox": [0, 0, 0.1, 0.1]}],
+    )
+    assert [m.value for m in marks] == ["48200"]
+
+
 def test_extract_returns_empty_when_vision_call_fails(monkeypatch):
     def boom(image, api_key):
         raise RuntimeError("API 호출 실패")
