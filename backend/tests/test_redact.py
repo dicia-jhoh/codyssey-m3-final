@@ -51,3 +51,7 @@ def test_rrn_invalid_gender_digit_not_masked_as_rrn():
 def test_multiple_pii_in_one_text():
     text = "주민번호 900101-1234567, 계좌 123-456-789012"
     assert redact(text) == "주민번호 900101-1******, 계좌 [계좌번호 가림]"
+
+
+def test_kakaobank_account_with_seven_digit_chunk_hidden():
+    assert redact("계좌 3333-01-1234567로 입금") == "계좌 [계좌번호 가림]로 입금"
