@@ -43,7 +43,15 @@ $("photo").addEventListener("change", async (e) => {
   form.append("file", file);
   try {
     const r = await fetch("/decode", { method: "POST", body: form });
-    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      // 4xx detail 은 서버가 사용자에게 하는 말(크기·형식) — 다시 찍어도 안 되니 그대로 보여 준다
+      if (r.status < 500 && typeof body.detail === "string") {
+        $("status").textContent = body.detail;
+        return;
+      }
+      throw new Error(String(r.status));
+    }
     show(await r.json());
     $("status").textContent = "";
   } catch (err) {
