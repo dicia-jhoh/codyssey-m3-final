@@ -126,6 +126,23 @@ def test_double_check_keeps_deadline_in_month_day_format():
     ]
 
 
+@pytest.mark.parametrize(
+    ("document_text", "value", "expected"),
+    [
+        ("납부기한: 2026. 10. 31.(토)까지", "2026-10-31", ["2026-10-31"]),
+        ("2027년 1월 15일까지 내세요", "2027-01-15", ["2027-01-15"]),
+        ("2025년 10월 31일까지 내세요", "2026-10-31", []),  # 연도가 다르면 통과시키지 않는다
+    ],
+)
+def test_double_check_deadline_formats(document_text, value, expected):
+    marks = extract._double_check(
+        document_text=document_text,
+        items=[{"kind": "deadline", "text": "기한", "value": value, "bbox": [0, 0, 0.1, 0.1]}],
+        fallback_year=2026,
+    )
+    assert [m.value for m in marks] == expected
+
+
 def test_double_check_ignores_calendar_invalid_date():
     marks = extract._double_check(
         document_text="납부기한: 13월 31일까지",
