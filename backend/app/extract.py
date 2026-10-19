@@ -119,7 +119,8 @@ def _parse_json(text: str) -> dict:
 
 
 _AMOUNT_RE = re.compile(r"([\d][\d,]*)\s*원")
-_DATE_RE_FULL = re.compile(r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})")
+# "2026.10.31" · "2026. 10. 31." · "2026년 10월 31일" — 공문은 점 뒤에 한 칸씩 띄우는 표기가 흔하다
+_DATE_RE_FULL = re.compile(r"(?<!\d)(\d{4})\s*(?:[.\-/]|년)\s*(\d{1,2})\s*(?:[.\-/]|월)\s*(\d{1,2})")
 _DATE_RE_MD = re.compile(r"(\d{1,2})월\s*(\d{1,2})일")  # "10월 31일" — 연도를 안 적는 공문이 흔함
 
 
@@ -139,7 +140,8 @@ def _dates(text: str, *, fallback_year: int):
     """본문의 날짜를 "YYYY.MM.DD" 형식부터, 다음 "MM월 DD일" 형식 순서로 ISO 로 낸다(달력에 없으면 None)."""
     for y, mo, d in _DATE_RE_FULL.findall(text):
         yield _to_iso(int(y), int(mo), int(d))
-    for mo, d in _DATE_RE_MD.findall(text):
+    # 연도가 있는 날짜는 지우고 찾는다 — 안 지우면 "2027년 1월 15일" 의 "1월 15일" 에 올해가 붙는다
+    for mo, d in _DATE_RE_MD.findall(_DATE_RE_FULL.sub(" ", text)):
         yield _to_iso(fallback_year, int(mo), int(d))
 
 
