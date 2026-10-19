@@ -115,7 +115,7 @@ cd backend
 LLM_API_KEY=sk-... python -m app.extract <고지서사진.jpg>
 ```
 
-**테스트**: `backend/tests/test_extract.py`(29건) — 실제 API 호출 없이 동작한다.
+**테스트**: `backend/tests/test_extract.py` — 실제 API 호출 없이 동작한다.
 `_call_vision`을 통째로 가짜로 바꾼 파이프라인 테스트(JSON 파싱, 이중 확인, 성공/실패
 경로, CLI 인자 처리)에 더해, `Anthropic` 클라이언트 자체를 가짜로 바꿔서
 `messages.create`에 실제로 넘어가는 `model`·`media_type` 값까지 검증한다 — 아래 버그가
@@ -152,7 +152,7 @@ CLI로 아무나 바로 해볼 수 있음). 김기훈의 테스트셋(`data/test
 - Python 3.11 이상 (`python3 --version` 으로 확인)
 - Git, 그리고 이 저장소에 초대된 GitHub 계정(초대 메일에서 수락)
 - 웹 브라우저(크롬 권장)
-- LLM API 키는 **없어도 된다** — 없으면 샘플 모드로 돈다. 진짜 해독을 시험할 때만 `backend/.env` 에 넣는다(커밋 금지)
+- LLM API 키는 **없어도 된다** — 없으면 샘플 모드로 돈다. 진짜 해독을 시험할 때만 `backend/.env` 에 `LLM_API_KEY=...` 를 넣고 3번에 `--env-file .env` 를 붙인다(커밋 금지)
 
 ## 따라 하기
 
@@ -172,6 +172,7 @@ CLI로 아무나 바로 해볼 수 있음). 김기훈의 테스트셋(`data/test
 3. 백엔드 서버를 띄운다. 켜 두면 http://localhost:8000/docs 에서 API 를 눌러 볼 수 있다.
    ```bash
    uvicorn app.main:app --reload
+   # 진짜 해독: uvicorn app.main:app --reload --env-file .env   (앱은 .env 를 직접 읽지 않는다)
    ```
 4. 브라우저로 http://localhost:8000/app/ 을 연다. 백엔드가 서비스 화면(`web/`)과 팀 홈페이지(http://localhost:8000/)도 같이 내준다. 아무 사진이나 올리면 샘플 해독 결과가 나온다.
    화면(`web/`)을 고치면 새로고침만 하면 된다 — 서버가 파일을 그대로 읽어 낸다.
