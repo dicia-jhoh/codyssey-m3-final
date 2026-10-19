@@ -9,6 +9,7 @@
 import base64
 import json
 import logging
+import math
 import re
 from datetime import date
 
@@ -151,6 +152,18 @@ def _document_dates(document_text: str, *, fallback_year: int) -> set[str]:
     return {iso for iso in _dates(document_text, fallback_year=fallback_year) if iso}
 
 
+def _is_bbox(bbox: object) -> bool:
+    """[x, y, w, h] 숫자 4개인지 — 아니면 화면에 그릴 수 없다."""
+    return (
+        isinstance(bbox, list)
+        and len(bbox) == 4
+        and all(
+            isinstance(x, int | float) and not isinstance(x, bool) and math.isfinite(x)
+            for x in bbox
+        )
+    )
+
+
 def _double_check(document_text: str, items: list[dict], *, fallback_year: int | None = None) -> list[Mark]:
     """money/deadline 항목을 document_text 본문과 교차 대조한다.
 
@@ -166,20 +179,24 @@ def _double_check(document_text: str, items: list[dict], *, fallback_year: int |
 
     marks: list[Mark] = []
     for item in items:
+        if not isinstance(item, dict):
+            continue
         kind = item.get("kind")
         text = item.get("text")
-        value = item.get("value")
+        value = str(item.get("value") or "")
         bbox = item.get("bbox")
-        if kind not in ("money", "deadline", "document") or not text or not bbox or len(bbox) != 4:
+        if kind not in ("money", "deadline", "document") or not isinstance(text, str) or not text:
             continue  # 모양이 안 맞는 항목은 버린다 — 모델 출력은 신뢰 못 함
+        if not _is_bbox(bbox):
+            continue
 
         if kind == "money":
-            amount = _parse_amount_won(value or "") or _parse_amount_won(text)
+            amount = _parse_amount_won(value) or _parse_amount_won(text)
             if amount is None or amount not in doc_amounts:
                 continue
             value = str(amount)
         elif kind == "deadline":
-            date_iso = _parse_date_iso(value or "", fallback_year=fallback_year) or _parse_date_iso(
+            date_iso = _parse_date_iso(value, fallback_year=fallback_year) or _parse_date_iso(
                 text, fallback_year=fallback_year
             )
             if date_iso is None or date_iso not in doc_dates:
@@ -187,7 +204,7 @@ def _double_check(document_text: str, items: list[dict], *, fallback_year: int |
             value = date_iso
         # document 종류는 금액·날짜가 아니므로 이중 확인 대상이 아니다
 
-        marks.append(Mark(kind=kind, text=text, value=value or "", bbox=[float(x) for x in bbox]))
+        marks.append(Mark(kind=kind, text=text, value=value, bbox=[float(x) for x in bbox]))
 
     return marks
 
@@ -204,10 +221,16 @@ def extract(image: bytes, api_key: str) -> tuple[str, list[Mark]]:
         log.exception("비전 추출 실패 — 샘플 모드로 넘어감")
         return "", []
 
-    document_text = raw.get("document_text") or ""
-    items = raw.get("items") or []
-    if not document_text:
+    # JSON 은 맞아도 모양이 다를 수 있다 — 여기서 예외가 나면 /decode 가 500 이 된다
+    if not isinstance(raw, dict):
+        log.warning("비전 응답이 객체가 아님(%s) — 샘플 모드로 넘어감", type(raw).__name__)
         return "", []
+    document_text = raw.get("document_text")
+    items = raw.get("items")
+    if not isinstance(document_text, str) or not document_text:
+        return "", []
+    if not isinstance(items, list):
+        items = []
 
     return document_text, _double_check(document_text, items)
 
