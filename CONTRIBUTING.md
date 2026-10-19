@@ -18,7 +18,7 @@
 git clone https://github.com/dicia-jhoh/codyssey-m3-final.git
 cd codyssey-m3-final
 git switch -c jeonggwan/profile          # <내 id>/<무엇>
-# content/members/jeonggwan.js 를 연다 → github·role·work·pitch 채우기
+# content/members/jeonggwan.js 를 연다 → github·role·work 채우기
 python3 -m http.server 8000         # http://localhost:8000 에서 내 칸 확인
 git add content/members/jeonggwan.js
 git commit -m "이정관: 역할·주제 후보 추가"
@@ -27,7 +27,6 @@ git push -u origin jeonggwan/profile
 ```
 
 `role` 을 채우면 첫 화면 별자리에서 내 색이 선명해지고, 팀 칸이 켜진다.
-`pitch` 에 주제 후보를 적으면 "주제 후보" 목록에 올라간다.
 
 ## 2. 규칙
 
