@@ -1,5 +1,6 @@
 import time
 
+from app import share
 from app.schema import Decoded
 from app.share import create_share, get_share
 
@@ -29,3 +30,11 @@ def test_expired_share_returns_none_and_is_removed():
 def test_share_ids_are_unique():
     ids = {create_share(_decoded()) for _ in range(20)}
     assert len(ids) == 20
+
+
+def test_oldest_share_dropped_when_full(monkeypatch):
+    monkeypatch.setattr(share, "MAX_SHARES", 3)
+    monkeypatch.setattr(share, "_store", {})
+    ids = [create_share(_decoded()) for _ in range(4)]
+    assert get_share(ids[0]) is None
+    assert all(get_share(i) is not None for i in ids[1:])
