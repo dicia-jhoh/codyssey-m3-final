@@ -12,6 +12,8 @@ window.MEMBERS.youjin = {
   prs: [
     // 내가 올린 PR 주소
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/82",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/85",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/86",
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
