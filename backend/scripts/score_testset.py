@@ -65,7 +65,7 @@ def score_one(label: dict, result: Decoded | None) -> ImageScore:
     틀린 기한은 기한 없음보다 위험하다(D-day 알림이 틀어짐).
 
     할 일은 제목이 아니라 (기한, 금액) 쌍으로 비교한다 — 제목은 rag 연동 전까지
-    "{doc_type} 금액 내기"처럼 구체화되지 않은 상태라(agent.py의 _title_for 참고)
+    "{doc_type} 돈 내기"처럼 구체화되지 않은 상태라(agent.py의 _title_for 참고)
     제목 비교는 지금 구조에서는 늘 0점이 나온다. 지금 잴 수 있는 건 카드 내용이
     맞게 만들어졌는지다.
     """
