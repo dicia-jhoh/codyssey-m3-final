@@ -13,6 +13,7 @@ import math
 import re
 from datetime import date
 
+import httpx
 from anthropic import Anthropic
 
 from .schema import Mark
@@ -20,6 +21,10 @@ from .schema import Mark
 log = logging.getLogger(__name__)
 
 _MODEL = "claude-sonnet-5-5"
+# LLM_API_KEY 가 Google AI Studio 키("AIza…")면 Gemini 로 보낸다 — 서버 키가 Gemini 라서(10-21)
+_GEMINI_MODEL = "gemini-flash-lite-latest"  # 무료 한도가 넉넉한 쪽
+_GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+_USER_PROMPT = "이 고지서 사진에서 항목을 뽑아 JSON으로만 답하라."
 
 _SYSTEM_PROMPT = """\
 너는 한국 고지서(납부고지서·가정통신문·주민센터 안내문 등) 사진을 읽는 비전 분석기다.
@@ -83,7 +88,12 @@ def _media_type(image: bytes) -> str:
 
 
 def _call_vision(image: bytes, api_key: str) -> dict:
-    """Claude 비전에 사진을 보내 (document_text, items) 원시 JSON을 받는다."""
+    """비전 LLM 에 사진을 보내 (document_text, items) 원시 JSON을 받는다.
+
+    키 모양으로 고른다: "AIza…" = Gemini, 그 밖 = Claude.
+    """
+    if api_key.startswith("AIza"):
+        return _call_gemini(image, api_key)
     client = Anthropic(api_key=api_key)
     response = client.messages.create(
         model=_MODEL,
@@ -101,13 +111,47 @@ def _call_vision(image: bytes, api_key: str) -> dict:
                             "data": base64.b64encode(image).decode("ascii"),
                         },
                     },
-                    {"type": "text", "text": "이 고지서 사진에서 항목을 뽑아 JSON으로만 답하라."},
+                    {"type": "text", "text": _USER_PROMPT},
                 ],
             }
         ],
     )
     text = "".join(block.text for block in response.content if block.type == "text")
     return _parse_json(text)
+
+
+def _call_gemini(image: bytes, api_key: str) -> dict:
+    """Gemini generateContent 로 같은 프롬프트·스키마를 보낸다.
+
+    키는 URL 이 아니라 헤더에 싣는다 — 실패하면 extract() 가 예외를 로그에 남기는데,
+    httpx 오류 문구에는 URL 이 들어가서 ?key= 로 보내면 키가 로그에 찍힌다.
+    """
+    response = httpx.post(
+        _GEMINI_URL.format(model=_GEMINI_MODEL),
+        headers={"x-goog-api-key": api_key},
+        json={
+            "systemInstruction": {"parts": [{"text": _SYSTEM_PROMPT}]},
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "inline_data": {
+                                "mime_type": _media_type(image),
+                                "data": base64.b64encode(image).decode("ascii"),
+                            }
+                        },
+                        {"text": _USER_PROMPT},
+                    ],
+                }
+            ],
+            "generationConfig": {"responseMimeType": "application/json"},
+        },
+        timeout=90,
+    )
+    response.raise_for_status()
+    parts = response.json()["candidates"][0]["content"]["parts"]
+    return _parse_json("".join(part.get("text", "") for part in parts))
 
 
 def _parse_json(text: str) -> dict:
