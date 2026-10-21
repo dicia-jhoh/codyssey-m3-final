@@ -84,17 +84,18 @@ class _FakeGeminiResponse:
         return {"candidates": [{"content": {"parts": [{"text": '{"document_text": "g", "items": []}'}]}}]}
 
 
-def test_call_vision_sends_gemini_key_to_gemini_in_header(monkeypatch):
+@pytest.mark.parametrize("key", ["AIzaDummy", "AQ.Dummy"])  # 옛 키·새 키 모양 둘 다
+def test_call_vision_sends_gemini_key_to_gemini_in_header(monkeypatch, key):
     calls: list[dict] = []
     monkeypatch.setattr(extract, "Anthropic", lambda **kwargs: pytest.fail("Gemini 키가 Claude 로 갔다"))
     monkeypatch.setattr(extract.httpx, "post", lambda url, **kw: calls.append({"url": url, **kw}) or _FakeGeminiResponse())
 
-    raw = extract._call_vision(b"\x89PNG\r\n\x1a\n...", "AIzaDummy")
+    raw = extract._call_vision(b"\x89PNG\r\n\x1a\n...", key)
 
     assert raw == {"document_text": "g", "items": []}
     assert extract._GEMINI_MODEL in calls[0]["url"]
-    assert "AIzaDummy" not in calls[0]["url"]  # 키가 URL(=오류 로그)에 실리지 않는다
-    assert calls[0]["headers"] == {"x-goog-api-key": "AIzaDummy"}
+    assert key not in calls[0]["url"]  # 키가 URL(=오류 로그)에 실리지 않는다
+    assert calls[0]["headers"] == {"x-goog-api-key": key}
     image_part = calls[0]["json"]["contents"][0]["parts"][0]
     assert image_part["inline_data"]["mime_type"] == "image/png"
 

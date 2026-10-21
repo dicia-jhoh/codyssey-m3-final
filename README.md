@@ -81,7 +81,7 @@ flowchart LR
 **동작 순서**
 1. 사진 바이트의 헤더로 실제 형식(JPEG/PNG/WebP/GIF)을 판별해 `media_type`에 정확히 넣는다
    (`_media_type()`) — 하나로 고정해두면 폰 스크린샷(PNG)이 API에서 거절당한다.
-2. 비전 LLM 에 사진을 보낸다 — `LLM_API_KEY` 가 Google AI Studio 키(`AIza…`)면 Gemini
+2. 비전 LLM 에 사진을 보낸다 — `LLM_API_KEY` 가 Google AI Studio 키(`AIza…`·`AQ.…`)면 Gemini
    (`gemini-flash-lite-latest`), 아니면 Claude. 두 쪽 다 같은 system prompt를 쓰고, 그 prompt가 출력 형식을 JSON 스키마 하나로 강제한다
    (`document_text` 본문 전체 + `items`: `kind`(money/deadline/document)·`text`·`value`·`bbox`).
    자유 문장으로 받으면 좌표를 못 쓰므로, 스키마를 벗어나면 그대로 실패 취급한다.
