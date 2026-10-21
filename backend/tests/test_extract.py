@@ -99,6 +99,12 @@ def test_call_vision_sends_gemini_key_to_gemini_in_header(monkeypatch):
     assert image_part["inline_data"]["mime_type"] == "image/png"
 
 
+def test_call_gemini_rejects_gif_before_sending(monkeypatch):
+    monkeypatch.setattr(extract.httpx, "post", lambda *a, **kw: pytest.fail("GIF 를 보냈다"))
+    with pytest.raises(extract.UnsupportedImageFormatError):
+        extract._call_vision(b"GIF89a...", "AIzaDummy")
+
+
 def test_parse_json_handles_bare_json():
     assert extract._parse_json('{"document_text": "x", "items": []}') == {
         "document_text": "x",

@@ -126,6 +126,9 @@ def _call_gemini(image: bytes, api_key: str) -> dict:
     키는 URL 이 아니라 헤더에 싣는다 — 실패하면 extract() 가 예외를 로그에 남기는데,
     httpx 오류 문구에는 URL 이 들어가서 ?key= 로 보내면 키가 로그에 찍힌다.
     """
+    media_type = _media_type(image)
+    if media_type == "image/gif":  # Gemini 는 PNG·JPEG·WebP·HEIC 만 받는다 — 400 이 원인 없이 샘플로 새지 않게
+        raise UnsupportedImageFormatError("GIF 는 Gemini 가 받지 않음 — JPEG/PNG 로 올려야 함")
     response = httpx.post(
         _GEMINI_URL.format(model=_GEMINI_MODEL),
         headers={"x-goog-api-key": api_key},
@@ -137,7 +140,7 @@ def _call_gemini(image: bytes, api_key: str) -> dict:
                     "parts": [
                         {
                             "inline_data": {
-                                "mime_type": _media_type(image),
+                                "mime_type": media_type,
                                 "data": base64.b64encode(image).decode("ascii"),
                             }
                         },
