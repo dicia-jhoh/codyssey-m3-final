@@ -21,7 +21,9 @@ from .schema import Mark
 log = logging.getLogger(__name__)
 
 _MODEL = "claude-sonnet-5-5"
-# LLM_API_KEY 가 Google AI Studio 키("AIza…")면 Gemini 로 보낸다 — 서버 키가 Gemini 라서(10-21)
+# LLM_API_KEY 가 Google AI Studio 키면 Gemini 로 보낸다 — 서버 키가 Gemini 라서(10-21).
+# 옛 키는 "AIza…", 새로 발급되는 키는 "AQ.…" 다(서버 키가 이쪽).
+_GEMINI_KEY_PREFIXES = ("AIza", "AQ.")
 _GEMINI_MODEL = "gemini-flash-lite-latest"  # 무료 한도가 넉넉한 쪽
 _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 _USER_PROMPT = "이 고지서 사진에서 항목을 뽑아 JSON으로만 답하라."
@@ -90,9 +92,9 @@ def _media_type(image: bytes) -> str:
 def _call_vision(image: bytes, api_key: str) -> dict:
     """비전 LLM 에 사진을 보내 (document_text, items) 원시 JSON을 받는다.
 
-    키 모양으로 고른다: "AIza…" = Gemini, 그 밖 = Claude.
+    키 모양으로 고른다: Google 키(_GEMINI_KEY_PREFIXES) = Gemini, 그 밖 = Claude.
     """
-    if api_key.startswith("AIza"):
+    if api_key.startswith(_GEMINI_KEY_PREFIXES):
         return _call_gemini(image, api_key)
     client = Anthropic(api_key=api_key)
     response = client.messages.create(
