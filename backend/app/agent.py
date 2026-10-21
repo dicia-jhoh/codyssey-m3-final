@@ -50,10 +50,10 @@ def _title_for(doc_type: str, *, has_money: bool) -> str:
     """카드 종류(돈이 있는지)로 제목을 고른다 — doc_type만으로 고르면 「안내문 납부하기」
     처럼 안 맞는 조합이 나올 수 있다."""
     if has_money:
-        return f"{doc_type} 금액 내기"
+        return f"{doc_type} 돈 내기"
     if doc_type == "신청서":
-        return "신청하기"
-    return f"{doc_type} 제출하기"
+        return "신청서 내기"
+    return f"{doc_type} 내기"
 
 
 def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:

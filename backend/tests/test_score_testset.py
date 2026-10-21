@@ -43,7 +43,7 @@ def test_score_one_all_correct():
             Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1]),
             Mark(kind="document", text="납부서(뒷면)", value="", bbox=[0, 0, 0.1, 0.1]),
         ],
-        todos=[Todo(title="고지서 금액 내기", due="2026-10-31", amount=48200, how="")],
+        todos=[Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="")],
     )
 
     score = score_one(label, result)
@@ -109,11 +109,11 @@ def test_score_one_treats_failed_extraction_as_all_wrong():
 
 
 def test_score_one_matches_todo_by_due_and_amount_not_title():
-    # #17 이후 제목이 "{doc_type} 금액 내기"로 바뀌어서 라벨 예시의 "건강보험료 내기"와
+    # #17 이후 제목이 "{doc_type} 돈 내기"(#66)로 바뀌어서 라벨 예시의 "건강보험료 내기"와
     # 절대 안 맞는다 — 그래서 제목이 아니라 (기한, 금액) 쌍으로 비교한다(이슈 #23-3).
     label = {"image": "001.jpg", "todos": [{"due": "2026-10-31", "amount": 48200}]}
     result = _decoded(
-        todos=[Todo(title="고지서 금액 내기", due="2026-10-31", amount=48200, how="")]
+        todos=[Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="")]
     )
 
     score = score_one(label, result)

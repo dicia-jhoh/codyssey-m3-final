@@ -17,7 +17,7 @@ def test_todos_from_marks_pairs_money_with_nearest_deadline():
         Mark(kind="document", text="신분증", value="", bbox=[0.1, 0.7, 0.5, 0.08]),
     ]
     todos = _todos_from_marks("고지서", marks)
-    assert todos == [Todo(title="고지서 금액 내기", due="2026-10-31", amount=48200, how="은행 또는 앱 납부")]
+    assert todos == [Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="은행 또는 앱 납부")]
 
 
 def test_todos_from_marks_pairs_each_money_with_closest_deadline():
@@ -37,7 +37,7 @@ def test_todos_from_marks_pairs_each_money_with_closest_deadline():
 def test_todos_from_marks_handles_no_deadline():
     marks = [Mark(kind="money", text="금 1,000원", value="1000", bbox=[0, 0, 0.1, 0.1])]
     todos = _todos_from_marks("고지서", marks)
-    assert todos == [Todo(title="고지서 금액 내기", due=None, amount=1000, how="은행 또는 앱 납부")]
+    assert todos == [Todo(title="고지서 돈 내기", due=None, amount=1000, how="은행 또는 앱 납부")]
 
 
 def test_todos_from_marks_empty_when_no_money_or_deadline():
@@ -49,13 +49,13 @@ def test_todos_from_marks_makes_card_for_deadline_only_document():
     # 신청서처럼 돈 없이 기한만 있는 문서도 카드가 나와야 한다(이슈 #20-1).
     marks = [Mark(kind="deadline", text="10월 31일까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1])]
     todos = _todos_from_marks("신청서", marks)
-    assert todos == [Todo(title="신청하기", due="2026-10-31", amount=None, how="")]
+    assert todos == [Todo(title="신청서 내기", due="2026-10-31", amount=None, how="")]
 
 
 def test_todos_from_marks_deadline_only_title_for_non_application_doc():
     marks = [Mark(kind="deadline", text="11월 3일까지", value="2026-11-03", bbox=[0, 0, 0.1, 0.1])]
     todos = _todos_from_marks("가정통신문", marks)
-    assert todos[0].title == "가정통신문 제출하기"
+    assert todos[0].title == "가정통신문 내기"
 
 
 def test_todos_from_marks_ignores_deadline_too_far_from_money():
