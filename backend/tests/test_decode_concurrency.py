@@ -31,7 +31,7 @@ def test_health_responds_while_decode_is_waiting(monkeypatch):
                 assert await asyncio.to_thread(started.wait, 3)
                 health = await asyncio.wait_for(client.get("/health"), timeout=3)
                 assert health.status_code == 200
-                assert health.json() == {"ok": True, "sample_mode": True}
+                assert health.json() == {"ok": True, "sample_mode": True, "commit": main.COMMIT}
                 assert not decoding.done()
             finally:
                 release.set()
