@@ -4,6 +4,25 @@
 const $ = (id) => document.getElementById(id);
 
 let currentDecoded = null; // "가족에게 보내기"가 다시 보낼 최근 해독 결과
+let largeTextEnabled = false;
+try {
+  largeTextEnabled = localStorage.getItem("largeText") === "true";
+} catch {}
+
+function updateTextSize() {
+  document.documentElement.classList.toggle("large-text", largeTextEnabled);
+  $("textSizeBtn").setAttribute("aria-pressed", String(largeTextEnabled));
+  $("textSizeBtn").textContent = largeTextEnabled ? "기본 글자" : "글자 크게";
+}
+
+updateTextSize();
+$("textSizeBtn").addEventListener("click", () => {
+  largeTextEnabled = !largeTextEnabled;
+  updateTextSize();
+  try {
+    localStorage.setItem("largeText", String(largeTextEnabled));
+  } catch {}
+});
 
 // 손주 모드: ?share=<id> 로 열리면 사진 올리기 없이 저장된 해독 결과를 바로 보여준다.
 // 원본 사진은 공유 저장소에 아예 없다(AI 윤리 — share.py 참고) — 그래서 3색 사진
