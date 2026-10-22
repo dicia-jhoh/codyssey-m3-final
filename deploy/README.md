@@ -24,6 +24,7 @@ OCI 서버(mc-osaka-1)의 설치 시간과 사용량은 아직 실측하지 않�
 git clone https://github.com/dicia-jhoh/codyssey-m3-final.git ~/codyssey-m3-final
 cd ~/codyssey-m3-final/backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m scripts.load_legal_articles
 sudo cp ../deploy/ttobak.service /etc/systemd/system/
 sudo systemctl disable --now codyssey-m3-final 2>/dev/null   # 예전 정적 홈페이지(같은 8037)
 sudo systemctl daemon-reload && sudo systemctl enable --now ttobak
@@ -34,8 +35,14 @@ sudo systemctl daemon-reload && sudo systemctl enable --now ttobak
 최신 main 을 받고 의존성을 맞춘 뒤 서비스를 다시 띄운다. 홈페이지는 정적 파일이라 받기만 하면 바로 바뀐다.
 
 ```bash
-cd ~/codyssey-m3-final && git pull --ff-only
+cd ~/codyssey-m3-final
+deploy_before_pull=$(git rev-parse HEAD)
+git pull --ff-only
 backend/.venv/bin/pip install -q -r backend/requirements.txt
+# 법령 데이터가 바뀐 경우에만 다시 적재한다(같은 조문은 upsert로 갱신).
+if ! git diff --quiet "$deploy_before_pull" HEAD -- data/legal/articles.jsonl; then
+    (cd backend && .venv/bin/python -m scripts.load_legal_articles)
+fi
 sudo systemctl restart ttobak
 curl -s localhost:8037/health          # {"ok":true,...} 이면 성공
 ```
