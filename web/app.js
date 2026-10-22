@@ -4,6 +4,22 @@
 const $ = (id) => document.getElementById(id);
 
 let currentDecoded = null; // "가족에게 보내기"가 다시 보낼 최근 해독 결과
+const completedTodos = loadCompletedTodos();
+
+function loadCompletedTodos() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("completedTodos") || "[]");
+    return new Set(Array.isArray(saved) ? saved.filter((key) => typeof key === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCompletedTodos() {
+  try {
+    localStorage.setItem("completedTodos", JSON.stringify([...completedTodos]));
+  } catch {}
+}
 
 // 손주 모드: ?share=<id> 로 열리면 사진 올리기 없이 저장된 해독 결과를 바로 보여준다.
 // 원본 사진은 공유 저장소에 아예 없다(AI 윤리 — share.py 참고) — 그래서 3색 사진
@@ -131,12 +147,30 @@ function show(d) {
   $("todos").replaceChildren(
     ...d.todos.map((t) => {
       const li = document.createElement("li");
+      const title = document.createElement("strong");
+      const details = document.createElement("span");
+      const button = document.createElement("button");
       const due = t.due ? `${t.due}까지` : "기한 없음";
       const money = t.amount != null ? ` · ${t.amount.toLocaleString("ko-KR")}원` : "";
       const how = t.how ? ` · ${t.how}` : "";
-      li.innerHTML = `<strong></strong><span></span>`;
-      li.querySelector("strong").textContent = t.title;
-      li.querySelector("span").textContent = `${due}${money}${how}`;
+      const key = JSON.stringify([t.title, t.due || ""]);
+      const completed = completedTodos.has(key);
+      title.textContent = t.title;
+      details.textContent = `${due}${money}${how}`;
+      button.type = "button";
+      button.className = "todo-complete";
+      button.setAttribute("aria-pressed", String(completed));
+      button.textContent = completed ? "취소" : "다 했어요";
+      if (completed) li.classList.add("completed");
+      button.addEventListener("click", () => {
+        const isCompleted = li.classList.toggle("completed");
+        button.setAttribute("aria-pressed", String(isCompleted));
+        button.textContent = isCompleted ? "취소" : "다 했어요";
+        if (isCompleted) completedTodos.add(key);
+        else completedTodos.delete(key);
+        saveCompletedTodos();
+      });
+      li.append(title, details, button);
       return li;
     })
   );
