@@ -1,47 +1,53 @@
-"""손주 모드 공유 — 해독 결과를 짧은 링크로 가족에게 보낸다(FR-07).
+"""손주 모드 공유 — 사진 없이 해독 결과 JSON만 SQLite에 최대 30일 저장한다.
 
-사진 원본은 절대 저장하지 않는다 — 이미 끝난 해독 결과(Decoded JSON)만 잠깐
-메모리에 들고 있다가 기한이 지나면 지운다(AI 윤리: "손주 모드 링크도 해독 결과만
-담고, 기한이 지나면 지운다" — docs/03-AI-설계.md).
-
-단순화: "기한이 지나면"을 todos의 가장 이른 due로 정확히 계산하는 대신, 고정
-TTL(기본 30일)로 둔다 — 서버 재시작하면 공유 링크도 전부 날아간다(인메모리라
-당연함). 여러 서버/재시작 사이에도 유지해야 하면 SQLite 등으로 바꿀 자리.
+기본 DB는 저장소의 data/share.db다. SHARE_DB로 경로를 바꿀 수 있다.
+재시작 후에도 링크를 읽을 수 있으며, 만료분과 1000개 초과분은 저장할 때 정리한다.
 """
 
 from __future__ import annotations
 
+from contextlib import closing
+import os
+from pathlib import Path
 import secrets
+import sqlite3
 import threading
 import time
 
 from .schema import Decoded
 
-DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60  # 30일
-MAX_SHARES = 1000  # 넘으면 가장 오래된 링크부터 지운다 — 인메모리라 무한히 쌓이면 서버가 죽는다
+DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60
+MAX_SHARES = 1000
+ROOT = Path(__file__).resolve().parents[2]
+_lock = threading.Lock()
 
-_store: dict[str, tuple[Decoded, float]] = {}
-_lock = threading.Lock()  # /share 는 동기 엔드포인트라 스레드풀에서 동시에 돈다
+
+def _connect() -> sqlite3.Connection:
+    path = Path(os.environ.get("SHARE_DB", "data/share.db"))
+    if not path.is_absolute():
+        path = ROOT / path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(path, check_same_thread=False)
+    db.execute("CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, body TEXT NOT NULL, expires_at REAL NOT NULL, created_at REAL NOT NULL)")
+    return db
 
 
 def create_share(decoded: Decoded, *, ttl_seconds: float = DEFAULT_TTL_SECONDS) -> str:
-    """해독 결과를 저장하고 공유 ID를 돌려준다."""
+    """해독 결과만 저장하고 공유 ID를 돌려준다."""
     share_id = secrets.token_urlsafe(8)
-    with _lock:
-        while len(_store) >= MAX_SHARES:
-            del _store[next(iter(_store))]  # dict 는 넣은 순서를 지킨다 = 가장 오래된 것
-        _store[share_id] = (decoded, time.time() + ttl_seconds)
+    now = time.time()
+    with _lock, closing(_connect()) as db, db:
+        db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
+        db.execute("INSERT INTO shares VALUES (?, ?, ?, ?)",
+                   (share_id, decoded.model_dump_json(), now + ttl_seconds, now))
+        db.execute("DELETE FROM shares WHERE id IN (SELECT id FROM shares ORDER BY created_at DESC, rowid DESC LIMIT -1 OFFSET ?)", (MAX_SHARES,))
     return share_id
 
 
 def get_share(share_id: str, *, now: float | None = None) -> Decoded | None:
-    """공유 ID로 해독 결과를 찾는다. 없거나 기한이 지났으면 None(만료분은 그 자리에서 지움)."""
-    entry = _store.get(share_id)
-    if entry is None:
-        return None
-    decoded, expires_at = entry
-    if (now if now is not None else time.time()) > expires_at:
-        with _lock:
-            _store.pop(share_id, None)
-        return None
-    return decoded
+    """없거나 만료된 공유는 None을 돌려주며 만료분은 지운다."""
+    now = time.time() if now is None else now
+    with _lock, closing(_connect()) as db, db:
+        db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
+        row = db.execute("SELECT body FROM shares WHERE id = ?", (share_id,)).fetchone()
+    return Decoded.model_validate_json(row[0]) if row else None
