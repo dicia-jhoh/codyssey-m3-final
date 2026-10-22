@@ -128,15 +128,33 @@ function show(d) {
     })
   );
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   $("todos").replaceChildren(
     ...d.todos.map((t) => {
       const li = document.createElement("li");
-      const due = t.due ? `${t.due}까지` : "기한 없음";
+      const dueDate = t.due ? new Date(`${t.due}T00:00:00`) : null;
+      const validDueDate = dueDate && Number.isFinite(dueDate.getTime());
+      const daysRemaining = validDueDate
+        ? Math.round((dueDate - today) / 86400000)
+        : null;
+      const dueDateLabel = validDueDate
+        ? `${dueDate.getMonth() + 1}월 ${dueDate.getDate()}일(${dueDate.toLocaleDateString("ko-KR", { weekday: "short" })})`
+        : "";
+      let due = "기한 없음";
+      if (t.due && !validDueDate) due = `${t.due}까지`;
+      else if (daysRemaining > 0) {
+        due = `${dueDateLabel}까지 · ${daysRemaining}일 남았어요`;
+      } else if (daysRemaining === 0) due = "오늘까지예요";
+      else if (daysRemaining < 0) due = "기한이 지났어요";
       const money = t.amount != null ? ` · ${t.amount.toLocaleString("ko-KR")}원` : "";
       const how = t.how ? ` · ${t.how}` : "";
-      li.innerHTML = `<strong></strong><span></span>`;
+      li.innerHTML = `<strong></strong><span class="due"></span><span class="details"></span>`;
       li.querySelector("strong").textContent = t.title;
-      li.querySelector("span").textContent = `${due}${money}${how}`;
+      const dueElement = li.querySelector(".due");
+      dueElement.textContent = due;
+      if (daysRemaining < 0) dueElement.classList.add("overdue");
+      li.querySelector(".details").textContent = `${money}${how}`;
       return li;
     })
   );
