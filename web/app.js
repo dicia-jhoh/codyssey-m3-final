@@ -119,11 +119,24 @@ function show(d) {
   // bbox = [x, y, w, h] 사진 대비 비율 → 퍼센트 위치
   $("marks").replaceChildren(
     ...d.marks.map((m) => {
-      const box = document.createElement("span");
+      const box = document.createElement("button");
+      const kindLabel = { money: "낼 돈", deadline: "기한", document: "챙길 서류" }[m.kind] || "원문";
       box.className = `mark ${m.kind}`;
+      box.type = "button";
+      box.setAttribute("aria-label", `${kindLabel}: ${m.text}`);
+      box.setAttribute("aria-expanded", "false");
       const [x, y, w, h] = m.bbox.map((v) => `${v * 100}%`);
       Object.assign(box.style, { left: x, top: y, width: w, height: h });
-      box.title = m.text;
+      const text = document.createElement("span");
+      text.className = "mark-text";
+      text.textContent = m.text;
+      text.hidden = true;
+      box.append(text);
+      box.addEventListener("click", () => {
+        const expanded = box.getAttribute("aria-expanded") === "true";
+        box.setAttribute("aria-expanded", String(!expanded));
+        text.hidden = expanded;
+      });
       return box;
     })
   );
