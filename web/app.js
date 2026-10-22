@@ -13,7 +13,7 @@ if (sharedId) {
   $("upload-section").hidden = true;
   $("photoSection").hidden = true;
   $("status").textContent = "불러오는 중…";
-  fetch(`/share/${sharedId}`)
+  fetch(`/share/${encodeURIComponent(sharedId)}`)
     .then((r) => {
       if (!r.ok) throw new Error(String(r.status));
       return r.json();
