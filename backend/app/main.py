@@ -3,13 +3,14 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from .agent import decode
 from .schema import Decoded
+from .notify import notify_deadlines
 from .share import create_share, get_share
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
@@ -37,7 +38,7 @@ def health() -> dict:
 
 
 @app.post("/decode", response_model=Decoded)
-async def decode_photo(file: UploadFile = File(...)) -> Decoded:
+async def decode_photo(background_tasks: BackgroundTasks, file: UploadFile = File(...)) -> Decoded:
     if not (file.content_type or "").startswith("image/"):
         raise HTTPException(400, "사진 파일만 올릴 수 있어요")
     image = await file.read(MAX_BYTES + 1)
@@ -46,7 +47,9 @@ async def decode_photo(file: UploadFile = File(...)) -> Decoded:
     if not image:
         raise HTTPException(400, "빈 사진 파일이에요")
     # 사진은 메모리에서만 쓰고 저장하지 않는다(AI 윤리 — 동의 없이 보관 금지)
-    return await run_in_threadpool(decode, image)
+    decoded = await run_in_threadpool(decode, image)
+    background_tasks.add_task(notify_deadlines, decoded)
+    return decoded
 
 
 @app.post("/share")
