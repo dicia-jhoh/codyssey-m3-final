@@ -31,3 +31,11 @@ curl -X POST http://localhost:5678/webhook-test/ttobak-deadline \
 - 처리 완료에 따른 남은 알림 취소는 후속 작업이다.
 
 참고: [Wait 노드 문서](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.wait/).
+
+## 실행 검증
+
+2026-10-22, 로컬 n8n 2.44.5 / Node.js 24.19.0에서 CLI 가져오기·내보내기를 확인했다.
+위 테스트 요청에 Webhook은 성공했고, 「3일 전까지 기다리기」 실행 로그는 Waiting 상태였다.
+두 발송 노드는 비활성이다. 월 경계·윤년·KST 날짜 표현식 3건도 통과했다.
+
+![Webhook 수신 후 Wait 대기](wait-validation.jpg)
