@@ -296,3 +296,39 @@ def test_extract_wires_call_vision_and_double_check(monkeypatch):
     assert marks == [
         Mark(kind="money", text="금 48,200원", value="48200", bbox=[0.1, 0.1, 0.2, 0.05])
     ]
+
+
+def test_box_2d_becomes_ratio_bbox():
+    """box_2d [위, 왼쪽, 아래, 오른쪽] 0~1000 → 화면 bbox [x, y, w, h] 0~1."""
+    marks = extract._double_check(
+        document_text="납부금액: 금 48,200원",
+        items=[{"kind": "money", "text": "48,200원", "value": "48200", "box_2d": [300, 500, 350, 750]}],
+    )
+    assert marks[0].bbox == pytest.approx([0.5, 0.3, 0.25, 0.05])
+
+
+def test_legacy_bbox_in_thousandths_is_scaled():
+    """0~1 을 시켜도 Gemini 는 0~1000 을 준다(10-23 실측 [801, 345, 155, 22]) — 사진 밖에 그리지 않는다."""
+    marks = extract._double_check(
+        document_text="2023. 11. 30 까지",
+        items=[{"kind": "deadline", "text": "2023. 11. 30 까지", "value": "2023-11-30", "bbox": [801, 345, 155, 22]}],
+    )
+    assert marks[0].bbox == pytest.approx([0.801, 0.345, 0.155, 0.022])
+    assert all(0 <= v <= 1 for v in marks[0].bbox)
+
+
+@pytest.mark.parametrize("item", [{"box_2d": [500, 500, 500, 600]}, {"box_2d": [0, 900, 100, 800]}, {"bbox": [0.2, 0.2, 0, 0.1]}])
+def test_empty_or_inverted_box_is_dropped(item):
+    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", **item}])
+    assert marks == []
+
+
+@pytest.mark.parametrize(("bbox", "expected"), [([-0.1, 0.2, 0.2, 0.1], [0.0, 0.2, 0.1, 0.1]), ([0.9, 0.9, 0.3, 0.3], [0.9, 0.9, 0.1, 0.1])])
+def test_legacy_bbox_is_clipped_not_shifted(bbox, expected):
+    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": bbox}])
+    assert marks[0].bbox == pytest.approx(expected)
+
+
+def test_legacy_bbox_wholly_outside_is_dropped():
+    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": [-0.5, 0.2, 0.2, 0.1]}])
+    assert marks == []
