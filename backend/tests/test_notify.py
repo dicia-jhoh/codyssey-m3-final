@@ -38,7 +38,7 @@ def test_only_deadlines_are_sent_with_expected_payload(monkeypatch):
     for call, todo in zip(post.call_args_list, [decoded.todos[0], decoded.todos[2]]):
         payload = call.kwargs["json"]
         ids.append(UUID(payload.pop("todo_id")))
-        assert payload == {**todo.model_dump(), "contact": ""}
+        assert payload == {"title": todo.title, "due": todo.due, "contact": ""}  # 금액·방법은 안 보낸다
         assert call.args == ("https://example.invalid",)
         assert call.kwargs["timeout"] == 5
     assert len(set(ids)) == 2
