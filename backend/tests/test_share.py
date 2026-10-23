@@ -1,3 +1,7 @@
+import importlib
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
+
 import time
 
 from app import share
@@ -34,7 +38,39 @@ def test_share_ids_are_unique():
 
 def test_oldest_share_dropped_when_full(monkeypatch):
     monkeypatch.setattr(share, "MAX_SHARES", 3)
-    monkeypatch.setattr(share, "_store", {})
     ids = [create_share(_decoded()) for _ in range(4)]
     assert get_share(ids[0]) is None
     assert all(get_share(i) is not None for i in ids[1:])
+
+
+def test_share_survives_module_reload():
+    share_id = create_share(_decoded())
+    importlib.reload(share)
+    assert share.get_share(share_id) == _decoded()
+
+
+def test_expired_entries_are_cleaned_before_capacity_eviction(monkeypatch):
+    monkeypatch.setattr(share, "MAX_SHARES", 2)
+    monkeypatch.setattr(share.time, "time", lambda: 100)
+    valid = create_share(_decoded())
+    expired = create_share(_decoded(), ttl_seconds=-1)
+    newest = create_share(_decoded())
+    assert get_share(valid) == _decoded()
+    assert get_share(expired) is None
+    assert get_share(newest) == _decoded()
+
+
+def test_only_decoded_json_is_stored(tmp_path):
+    share_id = create_share(_decoded())
+    with sqlite3.connect(tmp_path / "share.db") as db:
+        body, expires, created = db.execute("SELECT body, expires_at, created_at FROM shares WHERE id = ?", (share_id,)).fetchone()
+    assert body == _decoded().model_dump_json()
+    assert expires - created == share.DEFAULT_TTL_SECONDS
+
+
+def test_concurrent_share_requests():
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        ids = list(pool.map(lambda _: create_share(_decoded()), range(20)))
+        results = list(pool.map(get_share, ids))
+    assert len(set(ids)) == 20
+    assert results == [_decoded()] * 20

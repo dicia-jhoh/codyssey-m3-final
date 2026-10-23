@@ -12,3 +12,6 @@ dist/
 data/testset/images/
 # Chroma 영속 저장소 — 로컬 생성물, 실제 법령 데이터는 add_article()로 각자 채운다
 data/legal/chroma/
+
+# 공유 결과 SQLite 및 저널 파일
+data/share.db*
