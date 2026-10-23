@@ -331,4 +331,24 @@ def test_legacy_bbox_is_clipped_not_shifted(bbox, expected):
 
 def test_legacy_bbox_wholly_outside_is_dropped():
     marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": [-0.5, 0.2, 0.2, 0.1]}])
+def test_money_without_won_matches_grouped_number_in_document():
+    """표 칸의 「6,170」처럼 「원」이 없어도 쉼표 금액이면 대조한다(10-23 실제 주민세 고지서)."""
+    marks = extract._double_check(
+        document_text="세액합계 6,170\n납부기한 2023. 11. 30 까지",
+        items=[{"kind": "money", "text": "6,170", "value": "6170", "bbox": [0.7, 0.4, 0.05, 0.02]}],
+    )
+    assert [(m.kind, m.value) for m in marks] == [("money", "6170")]
+
+
+def test_plain_digits_in_document_are_not_amounts():
+    """납세번호 같은 쉼표 없는 맨 숫자와 우연히 같아도 금액으로 인정하지 않는다."""
+    marks = extract._double_check(
+        document_text="기관번호 2307207",
+        items=[{"kind": "money", "text": "2307207", "value": "2307207", "bbox": [0.1, 0.1, 0.1, 0.1]}],
+    )
+    assert marks == []
+
+
+def test_superscript_value_does_not_crash():
+    marks = extract._double_check(document_text="금 2원", items=[{"kind": "money", "text": "²", "value": "²", "bbox": [0.1, 0.1, 0.1, 0.1]}])
     assert marks == []
