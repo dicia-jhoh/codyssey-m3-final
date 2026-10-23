@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -14,6 +14,7 @@ from .schema import Decoded
 from .share import create_share, get_share
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
+MULTIPART_OVERHEAD = 64 * 1024  # multipart 경계·파일명 등 파일 외 메타데이터 여유
 MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
@@ -32,6 +33,18 @@ def _read_commit() -> str:
 COMMIT = _read_commit()  # 서버 시작 때 한 번만 읽는다
 
 app = FastAPI(title="또박또박 API", description="고지서 사진 → 할 일·근거")
+
+
+@app.middleware("http")
+async def limit_decode_upload(request, call_next):
+    if request.method == "POST" and request.url.path == "/decode":
+        try:
+            length = int(request.headers.get("content-length", "0"))
+        except ValueError:
+            length = 0
+        if length > MAX_BYTES + MULTIPART_OVERHEAD:
+            return JSONResponse({"detail": "사진이 너무 커요(10MB 이하)"}, status_code=413)
+    return await call_next(request)
 
 
 @app.middleware("http")
