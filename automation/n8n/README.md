@@ -1,59 +1,41 @@
 # n8n 기한 알림 — 담당: 이정관
 
-흐름(만들 것):
+`deadline-alert.json`: Webhook → D-3 Wait → 알림 → 당일 Wait → 알림.
+워크플로우는 비활성이며 **HTTP 알림 노드 두 개도 disabled** 상태다. 키·전화번호는 포함하지 않는다.
 
-1. **Webhook** — 백엔드가 해독을 마치면 `todos` 중 `due` 가 있는 것을 보낸다.
-2. **Wait / Schedule** — 기한 3일 전과 당일에 깨어난다.
-3. **알림** — 문자 또는 카카오 알림톡으로 「○○ 내는 날이 3일 남았어요」를 보낸다.
-4. **기록** — 처리 완료를 누르면 그 할 일을 끝낸 것으로 표시한다.
+## 가져오기
 
-만든 워크플로우는 n8n 에서 내보내기(Export)한 JSON 을 이 폴더에 `deadline-alert.json` 으로 커밋한다.
-API 키·전화번호는 JSON 에 넣지 않는다 — n8n Credentials 에 둔다.
+1. `docker run --rm -p 5678:5678 n8nio/n8n`으로 띄우고 http://localhost:5678 을 연다.
+2. 새 워크플로우에서 **Import from File**로 `deadline-alert.json`을 가져온다.
+3. Webhook의 **Listen for test event**를 누르고 아래 요청을 보낸다.
+4. 실행 화면에서 「3일 전까지 기다리기」가 대기 중인지 확인한다. 알림 노드는 켜지 않는다.
 
-## 구현 스펙 (실제 n8n 인스턴스·전화번호 없이 미리 짠 설계 — 그대로 안 맞으면 바꿔도 됨)
-
-### 1. 백엔드 → n8n: Webhook 호출 (아직 코드 없음, 이 부분도 새로 만들어야 함)
-
-`backend/app/main.py`의 `decode_photo()`가 `Decoded`를 돌려주기 **직전**, `todos` 중
-`due`가 있는 항목이 하나라도 있으면 n8n Webhook URL로 POST한다(실패해도 `/decode`
-응답 자체는 그대로 내보낸다 — 알림 실패가 해독 실패가 되면 안 됨, `try/except`로 감싸기).
-
-```json
-POST <N8N_WEBHOOK_URL>
-{
-  "todo_id": "임의 생성 UUID — n8n이 기억할 키, 처리완료 콜백 때도 이 id를 씀",
-  "title": "건강보험료 내기",
-  "due": "2026-10-31",
-  "amount": 48200,
-  "how": "은행 또는 앱 납부",
-  "contact": "<알림 받을 사람 연락처 — 지금은 입력 UI가 없음, 1단계는 손주모드 공유 시 입력받는 걸 제안>"
-}
+```bash
+curl -X POST http://localhost:5678/webhook-test/ttobak-deadline \
+  -H 'Content-Type: application/json' \
+  -d '{"todo_id":"00000000-0000-4000-8000-000000000001","title":"로컬 테스트","due":"2099-01-10","amount":1200,"how":"테스트","contact":""}'
 ```
 
-`N8N_WEBHOOK_URL`은 `backend/.env`에 새 변수로 추가(`.env.example`에도).
-`todo_id`는 서버가 메모리에 들고 있지 않는다(이 서비스는 상태를 최소로 둔다는
-원칙 — `backend/app/share.py` 참고) — n8n의 Wait 노드가 알아서 기억한다.
+## 백엔드 연결
 
-### 2. n8n 워크플로우 노드 구성
+[웹훅 연동 PR #114](https://github.com/dicia-jhoh/codyssey-m3-final/pull/114) 반영 뒤 `backend/.env`의 `N8N_WEBHOOK_URL`에 Webhook 주소를 설정한다.
+테스트 주소는 수신 대기 중에만 동작한다. 운영 주소(`/webhook/ttobak-deadline`)는 워크플로우를 게시·활성화한 뒤 사용한다.
+백엔드는 기한 있는 실제 해독 결과만 백그라운드로 보내며 샘플 모드는 보내지 않는다.
 
-```
-[Webhook 트리거] → [Wait: due - 3일까지] → [알림: "○○ 내는 날이 3일 남았어요"]
-                                          → [Wait: due 당일까지] → [알림: "오늘이 ○○ 내는 날이에요"]
-```
+## 시간·발송 설정
 
-- **Wait 노드**: n8n의 `Wait` 노드는 특정 시각까지 기다릴 수 있다(`resume: "specificTime"`).
-  `due`에서 3일을 빼서 Function 노드로 계산해 넣는다.
-- **알림 노드**: 문자(알리고 등 SMS API)나 카카오 알림톡 중 하나 — 어느 쪽이든 n8n
-  HTTP Request 노드 + Credentials로 처리(키는 노드 밖 Credentials에만).
-- **메시지 템플릿**: `쉬운말 가이드`(`docs/06-쉬운말-가이드.md`) 기준 — "{title} 내는 날이
-  {N}일 남았어요. {amount}원, {how}." 형태로, 한자어 없이 40자 이내.
-- **처리 완료 콜백**: 사용자가 "처리 완료" 버튼을 누르면(화면 쪽은 아직 없음 — 이것도
-  FR-08 범위) `POST /webhook/<n8n-id>/done` 같은 별도 Webhook으로 n8n에 알려서,
-  그 `todo_id`의 남은 Wait를 취소한다(n8n `Respond to Webhook` 또는 워크플로우
-  중단용 두 번째 트리거로 구성).
+- 기준은 **Asia/Seoul 오전 9시**다. D-3는 달력 날짜에서 3일을 뺀다.
+- 지정 시각이 이미 지났으면 Wait는 즉시 통과한다. 실제 발송 전 지난 알림 처리 정책을 정해야 한다.
+- 알림 URL의 `example.invalid`는 자리 표시다. 사용할 문자 서비스 요청 형식으로 바꾸고 n8n **Header Auth Credentials**를 연결한다. 키를 JSON에 적지 않는다.
+- 연락처 입력 화면은 아직 없으므로 `contact`는 빈 값이다. 수신자 동의·연락처 연결 전에는 발송 노드를 켜지 않는다.
+- 처리 완료에 따른 남은 알림 취소는 후속 작업이다.
 
-### 3. 테스트 방법 (실제 전화번호 없이)
+참고: [Wait 노드 문서](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.wait/).
 
-n8n Webhook 노드의 테스트 URL로 위 JSON을 `curl -X POST`로 직접 보내보고, Wait
-노드 타이밍이 의도대로 걸리는지 n8n 실행 로그로 확인한다. 알림 발송 노드만
-"실행 안 함(Deactivate)"으로 꺼두면 실제 문자 발송 없이 흐름 검증이 가능하다.
+## 실행 검증
+
+2026-10-22, 로컬 n8n 2.44.5 / Node.js 24.19.0에서 CLI 가져오기·내보내기를 확인했다.
+위 테스트 요청에 Webhook은 성공했고, 「3일 전까지 기다리기」 실행 로그는 Waiting 상태였다.
+두 발송 노드는 비활성이다. 월 경계·윤년·KST 날짜 표현식 3건도 통과했다.
+
+![Webhook 수신 후 Wait 대기](wait-validation.jpg)

@@ -1,0 +1,158 @@
+{
+  "name": "또박또박 기한 알림 (발송 비활성)",
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "할 일 받기",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ttobak-deadline",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ttobak-deadline",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "wait-d3",
+      "name": "3일 전까지 기다리기",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ],
+      "webhookId": "ttobak-wait-d3",
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ DateTime.fromISO($json.body.due, { zone: 'Asia/Seoul' }).startOf('day').set({ hour: 9 }).minus({ days: 3 }).toISO() }}"
+      }
+    },
+    {
+      "id": "alert-d3",
+      "name": "3일 전 알림 (비활성)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "disabled": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://example.invalid/deadline-alert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { contact: $json.body.contact, message: ($json.body.title + \" · 3일 남았어요\").slice(0, 40) } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "알림 서비스 Header Auth"
+        }
+      }
+    },
+    {
+      "id": "wait-day",
+      "name": "당일까지 기다리기",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ],
+      "webhookId": "ttobak-wait-day",
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ DateTime.fromISO($json.body.due, { zone: 'Asia/Seoul' }).startOf('day').set({ hour: 9 }).minus({ days: 0 }).toISO() }}"
+      }
+    },
+    {
+      "id": "alert-day",
+      "name": "당일 알림 (비활성)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ],
+      "disabled": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://example.invalid/deadline-alert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { contact: $json.body.contact, message: ($json.body.title + \" · 오늘까지예요\").slice(0, 40) } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "알림 서비스 Header Auth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "할 일 받기": {
+      "main": [
+        [
+          {
+            "node": "3일 전까지 기다리기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3일 전까지 기다리기": {
+      "main": [
+        [
+          {
+            "node": "3일 전 알림 (비활성)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3일 전 알림 (비활성)": {
+      "main": [
+        [
+          {
+            "node": "당일까지 기다리기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "당일까지 기다리기": {
+      "main": [
+        [
+          {
+            "node": "당일 알림 (비활성)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  },
+  "pinData": {}
+}
