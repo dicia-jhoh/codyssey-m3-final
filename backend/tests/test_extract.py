@@ -347,3 +347,8 @@ def test_plain_digits_in_document_are_not_amounts():
         items=[{"kind": "money", "text": "2307207", "value": "2307207", "bbox": [0.1, 0.1, 0.1, 0.1]}],
     )
     assert marks == []
+
+
+def test_superscript_value_does_not_crash():
+    marks = extract._double_check(document_text="금 2원", items=[{"kind": "money", "text": "²", "value": "²", "bbox": [0.1, 0.1, 0.1, 0.1]}])
+    assert marks == []

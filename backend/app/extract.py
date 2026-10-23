@@ -183,7 +183,7 @@ def _parse_amount_won(text: str) -> int | None:
     if m:
         return int(m.group(1).replace(",", ""))
     # 모델이 value 에 준 깨끗한 값("6170")
-    return int(text) if text.isdigit() else None
+    return int(text) if text.isdecimal() else None  # isdigit 은 「²」도 참이라 int() 가 터진다(OCR)
 
 
 def _to_iso(y: int, mo: int, d: int) -> str | None:
