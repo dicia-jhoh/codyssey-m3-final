@@ -18,7 +18,7 @@ curl -X POST http://localhost:5678/webhook-test/ttobak-deadline \
 
 ## 백엔드 연결
 
-[웹훅 연동 PR #114](https://github.com/dicia-jhoh/codyssey-m3-final/pull/114) 반영 뒤 `backend/.env`의 `N8N_WEBHOOK_URL`에 Webhook 주소를 설정한다.
+`backend/.env`의 `N8N_WEBHOOK_URL`에 Webhook 주소를 넣고 `sudo systemctl restart ttobak` 한다(보내는 코드 = `backend/app/notify.py`). 비워 두면 아무것도 보내지 않는다.
 테스트 주소는 수신 대기 중에만 동작한다. 운영 주소(`/webhook/ttobak-deadline`)는 워크플로우를 게시·활성화한 뒤 사용한다.
 백엔드는 기한 있는 실제 해독 결과만 백그라운드로 보내며 샘플 모드는 보내지 않는다.
 
