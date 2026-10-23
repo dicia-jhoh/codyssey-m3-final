@@ -1,9 +1,14 @@
 /* 담당: 송유영. 어르신 기준 — 큰 글씨, 넓은 버튼, 색만으로 뜻을 전하지 않는다(범례 글자) */
 :root { --money: #e5484d; --deadline: #3e63dd; --document: #30a46c; font-size: 18px; }
+:root.large-text { font-size: 22px; }
 body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.6; color: #111; background: #fafafa; }
 header, main { max-width: 640px; margin: 0 auto; padding: 16px; }
+.header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 h1 { margin: 0; line-height: 0; }
-h1 .logo { height: 56px; width: auto; }
+.header-top h1 { flex: 1; min-width: 0; }
+.header-top .logo { height: 56px; width: auto; max-width: 100%; }
+.text-size { flex: none; padding: 8px 10px; font: 700 0.85rem/1.2 system-ui, sans-serif; color: #111; background: #fff; border: 2px solid #111; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.text-size:focus-visible { outline: 3px solid var(--deadline); outline-offset: 2px; }
 .upload { position: relative; display: block; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 700;
   color: #fff; background: #111; border-radius: 12px; cursor: pointer; }
 .upload input {
