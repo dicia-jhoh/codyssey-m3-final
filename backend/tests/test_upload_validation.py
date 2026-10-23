@@ -90,3 +90,41 @@ def test_other_routes_ignore_decode_upload_limit():
     with TestClient(main.app) as client:
         response = client.post("/share", json=SAMPLE.model_dump(), headers={"content-length": str(main.MAX_BYTES * 2)})
     assert response.status_code == 200
+
+
+def test_chunked_upload_without_length_stops_at_limit(monkeypatch):
+    """Content-Length 없는 청크 전송도 한도에서 끊는다 — 남은 본문은 받지 않는다."""
+
+    async def scenario():
+        sent, reads = [], 0
+        chunk = b"x" * (1024 * 1024)
+
+        async def receive():
+            nonlocal reads
+            reads += 1
+            if reads > 100:
+                pytest.fail("한도를 넘긴 뒤에도 본문을 계속 읽었다")
+            body = head if reads == 1 else chunk  # 올바른 multipart 머리 + 끝없는 사진 바이트
+            return {"type": "http.request", "body": body, "more_body": True}
+
+        async def send(message):
+            sent.append(message)
+
+        monkeypatch.setattr(main, "decode", lambda image: pytest.fail("decode must not run"))
+        boundary = b"b"
+        head = (
+            b"--b\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.jpg\"\r\n"
+            b"Content-Type: image/jpeg\r\n\r\n"
+        )
+        scope = {
+            "type": "http", "http_version": "1.1", "method": "POST", "path": "/decode",
+            "scheme": "http", "query_string": b"", "root_path": "",
+            "headers": [(b"content-type", b"multipart/form-data; boundary=" + boundary),
+                        (b"transfer-encoding", b"chunked")],
+            "server": ("test", 80), "client": ("test", 123),
+        }
+        await main.app(scope, receive, send)
+        assert sent[0]["status"] == 413
+        assert reads <= main.LimitDecodeUpload.LIMIT // len(chunk) + 2
+
+    asyncio.run(scenario())

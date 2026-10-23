@@ -37,16 +37,60 @@ COMMIT = _read_commit()  # 서버 시작 때 한 번만 읽는다
 app = FastAPI(title="또박또박 API", description="고지서 사진 → 할 일·근거")
 
 
-@app.middleware("http")
-async def limit_decode_upload(request, call_next):
-    if request.method == "POST" and request.url.path == "/decode":
-        try:
-            length = int(request.headers.get("content-length", "0"))
-        except ValueError:
-            length = 0
-        if length > MAX_BYTES + MULTIPART_OVERHEAD:
-            return JSONResponse({"detail": "사진이 너무 커요(10MB 이하)"}, status_code=413)
-    return await call_next(request)
+class LimitDecodeUpload:
+    """/decode 본문을 받으면서 센다 — 넘으면 그 자리에서 413.
+
+    Content-Length 만 보면 그 헤더가 없는 청크 전송은 그대로 통과해, multipart 파서가
+    끝없이 임시 파일에 받아 적는다(OCR 리뷰). 헤더가 크면 본문을 읽기 전에 거절하고,
+    헤더가 없거나 거짓이면 받은 바이트를 세다가 넘는 순간 멈춘다.
+    """
+
+    LIMIT = MAX_BYTES + MULTIPART_OVERHEAD
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"] != "/decode":
+            return await self.app(scope, receive, send)
+        length = dict(scope["headers"]).get(b"content-length", b"")
+        if length.isdigit() and int(length) > self.LIMIT:
+            return await self._too_large(scope, receive, send)
+        received = 0
+        exceeded = False
+
+        async def counted():
+            nonlocal received, exceeded
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.LIMIT:
+                    exceeded = True
+                    # 더 받지 않게 본문을 여기서 끝낸다 — 파서는 잘린 본문으로 실패한다
+                    return {"type": "http.request", "body": b"", "more_body": False}
+            return message
+
+        started = False
+
+        async def guarded(message):
+            nonlocal started
+            if exceeded:
+                return  # 파서가 낸 400 대신 아래에서 413 을 보낸다
+            started = True
+            await send(message)
+
+        await self.app(scope, counted, guarded)
+        if exceeded and not started:
+            await self._too_large(scope, receive, send)
+
+    @staticmethod
+    async def _too_large(scope, receive, send):
+        await JSONResponse({"detail": "사진이 너무 커요(10MB 이하)"}, status_code=413)(
+            scope, receive, send
+        )
+
+
+app.add_middleware(LimitDecodeUpload)
 
 
 @app.middleware("http")
