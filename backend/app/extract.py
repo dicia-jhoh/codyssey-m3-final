@@ -170,14 +170,20 @@ def _parse_json(text: str) -> dict:
 
 
 _AMOUNT_RE = re.compile(r"([\d][\d,]*)\s*원")
+# 고지서 표는 금액 칸에 「원」 없이 「6,170」만 찍는 일이 흔하다 — 세 자리 쉼표가 있는 수는 금액으로 본다.
+# 쉼표 없는 맨 숫자(납세번호·기관번호 2307207 등)는 금액으로 세지 않는다.
+_GROUPED_RE = re.compile(r"(?<![\d,])(\d{1,3}(?:,\d{3})+)(?![\d,])")
 # "2026.10.31" · "2026. 10. 31." · "2026년 10월 31일" — 공문은 점 뒤에 한 칸씩 띄우는 표기가 흔하다
 _DATE_RE_FULL = re.compile(r"(?<!\d)(\d{4})\s*(?:[.\-/]|년)\s*(\d{1,2})\s*(?:[.\-/]|월)\s*(\d{1,2})")
 _DATE_RE_MD = re.compile(r"(\d{1,2})월\s*(\d{1,2})일")  # "10월 31일" — 연도를 안 적는 공문이 흔함
 
 
 def _parse_amount_won(text: str) -> int | None:
-    m = _AMOUNT_RE.search(text)
-    return int(m.group(1).replace(",", "")) if m else None
+    m = _AMOUNT_RE.search(text) or _GROUPED_RE.search(text)
+    if m:
+        return int(m.group(1).replace(",", ""))
+    # 모델이 value 에 준 깨끗한 값("6170")
+    return int(text) if text.isdigit() else None
 
 
 def _to_iso(y: int, mo: int, d: int) -> str | None:
@@ -260,7 +266,11 @@ def _double_check(document_text: str, items: list[dict], *, fallback_year: int |
     fallback_year: "10월 31일"처럼 연도가 없는 날짜를 만났을 때 쓸 연도(기본값: 올해).
     """
     fallback_year = fallback_year or date.today().year
-    doc_amounts = {int(m.group(1).replace(",", "")) for m in _AMOUNT_RE.finditer(document_text)}
+    doc_amounts = {
+        int(m.group(1).replace(",", ""))
+        for regex in (_AMOUNT_RE, _GROUPED_RE)
+        for m in regex.finditer(document_text)
+    }
     doc_dates = _document_dates(document_text, fallback_year=fallback_year)
 
     marks: list[Mark] = []
