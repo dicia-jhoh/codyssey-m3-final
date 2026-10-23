@@ -74,3 +74,10 @@ def test_concurrent_share_requests():
         results = list(pool.map(get_share, ids))
     assert len(set(ids)) == 20
     assert results == [_decoded()] * 20
+
+
+def test_share_db_is_owner_only(tmp_path):
+    db = tmp_path / "share.db"
+    db.touch(mode=0o644)
+    create_share(_decoded())
+    assert db.stat().st_mode & 0o777 == 0o600
