@@ -44,8 +44,11 @@ if ! git diff --quiet "$deploy_before_pull" HEAD -- data/legal/articles.jsonl; t
     (cd backend && .venv/bin/python -m scripts.load_legal_articles)
 fi
 sudo systemctl restart ttobak
-curl -s localhost:8037/health          # {"ok":true,...} 이면 성공
+bash deploy/smoke.sh http://localhost:8037  # 화면·API·빈 업로드 확인
 ```
+
+다른 컴퓨터에서는 `bash deploy/smoke.sh http://129.225.184.224:8037`로 확인한다.
+스크립트는 `curl`·`python3`를 사용하며 하나라도 실패하면 종료 코드 1을 낸다.
 
 ## 진짜 해독 켜기
 
