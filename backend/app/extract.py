@@ -236,7 +236,12 @@ def _to_bbox(item: dict) -> list[float] | None:
         raw = item["bbox"]
         scale = 1000 if any(v > 1 for v in raw) else 1
         x, y, w, h = (v / scale for v in raw)
-        x, y = _ratio(x), _ratio(y)
+        # 사진 밖으로 나간 쪽만 잘라낸다 — 시작점만 당기면 상자가 통째로 밀려 들어온다(OCR).
+        # 안에 있는 상자는 값을 그대로 둔다(끝점을 구했다 빼면 부동소수 오차가 생긴다)
+        if x < 0:
+            x, w = 0.0, w + x
+        if y < 0:
+            y, h = 0.0, h + y
         w, h = min(w, 1 - x), min(h, 1 - y)
     else:
         return None

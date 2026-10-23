@@ -321,3 +321,14 @@ def test_legacy_bbox_in_thousandths_is_scaled():
 def test_empty_or_inverted_box_is_dropped(item):
     marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", **item}])
     assert marks == []
+
+
+@pytest.mark.parametrize(("bbox", "expected"), [([-0.1, 0.2, 0.2, 0.1], [0.0, 0.2, 0.1, 0.1]), ([0.9, 0.9, 0.3, 0.3], [0.9, 0.9, 0.1, 0.1])])
+def test_legacy_bbox_is_clipped_not_shifted(bbox, expected):
+    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": bbox}])
+    assert marks[0].bbox == pytest.approx(expected)
+
+
+def test_legacy_bbox_wholly_outside_is_dropped():
+    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": [-0.5, 0.2, 0.2, 0.1]}])
+    assert marks == []
