@@ -1,6 +1,7 @@
 """FastAPI 서버 — 담당: 이정관. 실행: uvicorn app.main:app --reload (backend/ 에서)."""
 
 import os
+import subprocess
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -16,6 +17,19 @@ MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
 MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
+
+def _read_commit() -> str:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+            capture_output=True, text=True, check=True, timeout=2,
+        )
+        return result.stdout.strip() or "unknown"
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
+COMMIT = _read_commit()  # 서버 시작 때 한 번만 읽는다
 
 app = FastAPI(title="또박또박 API", description="고지서 사진 → 할 일·근거")
 
@@ -33,7 +47,7 @@ async def revalidate_pages(request, call_next):
 
 @app.get("/health")
 def health() -> dict:
-    return {"ok": True, "sample_mode": not os.environ.get("LLM_API_KEY")}
+    return {"ok": True, "sample_mode": not os.environ.get("LLM_API_KEY"), "commit": COMMIT}
 
 
 @app.post("/decode", response_model=Decoded)

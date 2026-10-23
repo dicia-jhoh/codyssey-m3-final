@@ -1,5 +1,11 @@
+import subprocess
+from types import SimpleNamespace
+
+import pytest
+
 from fastapi.testclient import TestClient
 
+from app import main
 from app.main import app
 
 client = TestClient(app)
@@ -7,7 +13,7 @@ client = TestClient(app)
 
 def test_health(monkeypatch):
     monkeypatch.delenv("LLM_API_KEY", raising=False)
-    assert client.get("/health").json() == {"ok": True, "sample_mode": True}
+    assert client.get("/health").json() == {"ok": True, "sample_mode": True, "commit": main.COMMIT}
 
 
 def test_decode_sample_mode(monkeypatch):
@@ -66,3 +72,29 @@ def test_share_unknown_id_is_404():
 def test_pages_revalidate():
     for path in ("/", "/content/site.js", "/assets/css/site.css", "/app/"):
         assert client.get(path).headers.get("cache-control") == "no-cache", path
+
+
+@pytest.mark.parametrize("error", [FileNotFoundError(), subprocess.CalledProcessError(1, "git"), subprocess.TimeoutExpired("git", 2)])
+def test_commit_lookup_failure_is_unknown(monkeypatch, error):
+    def fail(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(main.subprocess, "run", fail)
+    assert main._read_commit() == "unknown"
+    assert client.get("/health").status_code == 200
+
+
+def test_commit_lookup_and_health_cache(monkeypatch):
+    calls = []
+
+    def run(args, **kwargs):
+        calls.append(args)
+        assert kwargs["cwd"] == main.ROOT
+        assert kwargs["timeout"] == 2
+        return SimpleNamespace(stdout="abc1234\n")
+
+    monkeypatch.setattr(main.subprocess, "run", run)
+    assert main._read_commit() == "abc1234"
+    for _ in range(2):
+        assert client.get("/health").json()["commit"] == main.COMMIT
+    assert calls == [["git", "rev-parse", "--short", "HEAD"]]
