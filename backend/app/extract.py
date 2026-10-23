@@ -3,7 +3,8 @@
 할 일
 1. 비전 LLM 에 사진을 보내 schema.Mark 목록과 원문 글자를 JSON 으로 받는다(docs/03-AI-설계.md 「프롬프트」).
 2. 금액·날짜는 LLM 값과 사진 속 숫자를 한 번 더 대조한다. 어긋나면 그 Mark 는 빼고 「직접 확인 필요」로 남긴다.
-3. bbox 는 사진 크기 대비 비율(0~1)로 바꾼다 — 화면이 사진 크기와 상관없이 3색을 그리게 하려는 것.
+3. 위치는 모델에게 box_2d([위, 왼쪽, 아래, 오른쪽], 0~1000)로 받아 사진 크기 대비 비율 bbox
+   [x, y, w, h](0~1)로 바꾼다 — 화면이 사진 크기와 상관없이 3색을 그리게 하려는 것.
 """
 
 import base64
@@ -44,12 +45,13 @@ _SYSTEM_PROMPT = """\
       "kind": "money|deadline|document",
       "text": "<원문에 적힌 그대로의 값, 예: \\"48,200원\\">",
       "value": "<다루기 쉬운 값, 예: \\"48200\\", \\"2026-10-31\\">",
-      "bbox": [x, y, w, h]
+      "box_2d": [ymin, xmin, ymax, xmax]
     }
   ]
 }
 
-bbox는 이미지 전체를 1x1로 봤을 때의 비율 좌표다 (x,y=좌상단, w,h=너비/높이, 모두 0~1).
+box_2d는 그 값이 적힌 글자를 감싸는 상자다. 순서는 [위, 왼쪽, 아래, 오른쪽]이고, 이미지 전체를
+0~1000으로 정규화한 정수다(왼쪽 위 = 0, 오른쪽 아래 = 1000).
 표·도장·뒷면에 적힌 내용도 빠뜨리지 말고 찾아서 포함하라. 해당 종류의 항목이 없으면
 items에서 그냥 생략한다(빈 값으로 억지로 채우지 않는다).
 """
@@ -204,7 +206,7 @@ def _document_dates(document_text: str, *, fallback_year: int) -> set[str]:
 
 
 def _is_bbox(bbox: object) -> bool:
-    """[x, y, w, h] 숫자 4개인지 — 아니면 화면에 그릴 수 없다."""
+    """숫자 4개인지 — 아니면 화면에 그릴 수 없다."""
     return (
         isinstance(bbox, list)
         and len(bbox) == 4
@@ -213,6 +215,34 @@ def _is_bbox(bbox: object) -> bool:
             for x in bbox
         )
     )
+
+
+def _ratio(v: float) -> float:
+    return min(max(v, 0.0), 1.0)
+
+
+def _to_bbox(item: dict) -> list[float] | None:
+    """모델 좌표 → 화면 bbox [x, y, w, h](사진 대비 0~1). 그릴 수 없으면 None.
+
+    box_2d([위, 왼쪽, 아래, 오른쪽], 0~1000)가 기본이다 — Gemini 가 학습한 좌표 형식이라
+    0~1 비율을 시키면 0~1000 값을 그대로 돌려줘 상자가 사진 밖(80100%)에 그려졌다(10-23 실측).
+    옛 bbox [x, y, w, h] 도 받되, 1 을 넘는 값이 있으면 같은 0~1000 으로 보고 나눈다.
+    """
+    box = item.get("box_2d")
+    if _is_bbox(box):
+        top, left, bottom, right = (_ratio(v / 1000) for v in box)
+        x, y, w, h = left, top, right - left, bottom - top
+    elif _is_bbox(item.get("bbox")):
+        raw = item["bbox"]
+        scale = 1000 if any(v > 1 for v in raw) else 1
+        x, y, w, h = (v / scale for v in raw)
+        x, y = _ratio(x), _ratio(y)
+        w, h = min(w, 1 - x), min(h, 1 - y)
+    else:
+        return None
+    if w <= 0 or h <= 0:
+        return None
+    return [x, y, w, h]
 
 
 def _double_check(document_text: str, items: list[dict], *, fallback_year: int | None = None) -> list[Mark]:
@@ -235,10 +265,10 @@ def _double_check(document_text: str, items: list[dict], *, fallback_year: int |
         kind = item.get("kind")
         text = item.get("text")
         value = str(item.get("value") or "")
-        bbox = item.get("bbox")
+        bbox = _to_bbox(item)
         if kind not in ("money", "deadline", "document") or not isinstance(text, str) or not text:
             continue  # 모양이 안 맞는 항목은 버린다 — 모델 출력은 신뢰 못 함
-        if not _is_bbox(bbox):
+        if bbox is None:
             continue
 
         if kind == "money":
@@ -255,7 +285,7 @@ def _double_check(document_text: str, items: list[dict], *, fallback_year: int |
             value = date_iso
         # document 종류는 금액·날짜가 아니므로 이중 확인 대상이 아니다
 
-        marks.append(Mark(kind=kind, text=text, value=value, bbox=[float(x) for x in bbox]))
+        marks.append(Mark(kind=kind, text=text, value=value, bbox=bbox))
 
     return marks
 
