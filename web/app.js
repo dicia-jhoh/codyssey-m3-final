@@ -23,6 +23,22 @@ $("textSizeBtn").addEventListener("click", () => {
     localStorage.setItem("largeText", String(largeTextEnabled));
   } catch {}
 });
+const completedTodos = loadCompletedTodos();
+
+function loadCompletedTodos() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("completedTodos") || "[]");
+    return new Set(Array.isArray(saved) ? saved.filter((key) => typeof key === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCompletedTodos() {
+  try {
+    localStorage.setItem("completedTodos", JSON.stringify([...completedTodos]));
+  } catch {}
+}
 
 // 손주 모드: ?share=<id> 로 열리면 사진 올리기 없이 저장된 해독 결과를 바로 보여준다.
 // 원본 사진은 공유 저장소에 아예 없다(AI 윤리 — share.py 참고) — 그래서 3색 사진
@@ -179,14 +195,34 @@ function show(d) {
         due = `${dueDateLabel}까지 · ${daysRemaining}일 남았어요`;
       } else if (daysRemaining === 0) due = "오늘까지예요";
       else if (daysRemaining < 0) due = "기한이 지났어요";
-      const money = t.amount != null ? ` · ${t.amount.toLocaleString("ko-KR")}원` : "";
-      const how = t.how ? ` · ${t.how}` : "";
-      li.innerHTML = `<strong></strong><span class="due"></span><span class="details"></span>`;
-      li.querySelector("strong").textContent = t.title;
-      const dueElement = li.querySelector(".due");
+      const money = t.amount != null ? `${t.amount.toLocaleString("ko-KR")}원` : "";
+      const title = document.createElement("strong");
+      const dueElement = document.createElement("span");
+      const details = document.createElement("span");
+      const button = document.createElement("button");
+      const key = JSON.stringify([t.title, t.due || ""]);
+      const completed = completedTodos.has(key);
+      title.textContent = t.title;
+      dueElement.className = "due";
       dueElement.textContent = due;
       if (daysRemaining < 0) dueElement.classList.add("overdue");
-      li.querySelector(".details").textContent = `${money}${how}`;
+      details.className = "details";
+      // 금액·방법이 둘 다 없으면 빈 줄, 하나만 있으면 앞에 「 · 」 없이
+      details.textContent = [money, t.how].filter(Boolean).join(" · ");
+      button.type = "button";
+      button.className = "todo-complete";
+      button.setAttribute("aria-pressed", String(completed));
+      button.textContent = completed ? "취소" : "다 했어요";
+      if (completed) li.classList.add("completed");
+      button.addEventListener("click", () => {
+        const isCompleted = li.classList.toggle("completed");
+        button.setAttribute("aria-pressed", String(isCompleted));
+        button.textContent = isCompleted ? "취소" : "다 했어요";
+        if (isCompleted) completedTodos.add(key);
+        else completedTodos.delete(key);
+        saveCompletedTodos();
+      });
+      li.append(title, dueElement, details, button);
       return li;
     })
   );
