@@ -194,7 +194,7 @@ function show(d) {
       else if (daysRemaining > 0) {
         due = `${dueDateLabel}까지 · ${daysRemaining}일 남았어요`;
       } else if (daysRemaining === 0) due = "오늘까지예요";
-      else if (daysRemaining < 0) due = "기한이 지났어요";
+      else if (daysRemaining < 0) due = `${dueDateLabel}까지였어요 · 기한이 지났어요`;
       const money = t.amount != null ? `${t.amount.toLocaleString("ko-KR")}원` : "";
       const title = document.createElement("strong");
       const dueElement = document.createElement("span");
@@ -212,12 +212,12 @@ function show(d) {
       button.type = "button";
       button.className = "todo-complete";
       button.setAttribute("aria-pressed", String(completed));
-      button.textContent = completed ? "취소" : "다 했어요";
+      button.textContent = completed ? "아직 안 했어요" : "다 했어요";
       if (completed) li.classList.add("completed");
       button.addEventListener("click", () => {
         const isCompleted = li.classList.toggle("completed");
         button.setAttribute("aria-pressed", String(isCompleted));
-        button.textContent = isCompleted ? "취소" : "다 했어요";
+        button.textContent = isCompleted ? "아직 안 했어요" : "다 했어요";
         if (isCompleted) completedTodos.add(key);
         else completedTodos.delete(key);
         saveCompletedTodos();
