@@ -16,6 +16,8 @@ window.MEMBERS.youjin = {
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/86",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/100",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/101",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/138",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/139",
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
