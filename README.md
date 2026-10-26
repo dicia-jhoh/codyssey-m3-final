@@ -181,7 +181,7 @@ CLI로 아무나 바로 해볼 수 있음). 김기훈의 테스트셋(`data/test
    ```bash
    python3 -m http.server 8001
    ```
-6. 내 일을 시작한다. 브랜치를 만들고, 위 「내 파일」만 고치고, PR 을 올린다 — 자세한 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md).
+6. 내 일을 시작한다. 브랜치를 만들고, 위 「내 파일」만 고치고, PR 을 올린다 — 자세한 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md), 배정된 이슈를 고치는 순서는 [docs/07-이슈-해결하는-법.md](docs/07-이슈-해결하는-법.md).
 
 ## 배포
 
