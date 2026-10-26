@@ -184,6 +184,11 @@ def test_resolve_month_day_rolls_to_next_year_when_far_past():
     assert extract._resolve_month_day(1, 10, 2026, today=date(2026, 12, 20)) == "2027-01-10"
 
 
+def test_resolve_month_day_keeps_explicit_other_year():
+    # fallback_year 를 올해가 아닌 해로 넘기면 오늘과 비교하지 않는다 — 고정 연도 테스트가 해를 넘겨도 그대로.
+    assert extract._resolve_month_day(10, 31, 2026, today=date(2027, 1, 5)) == "2026-10-31"
+
+
 def test_resolve_month_day_returns_none_for_invalid_calendar_date():
     assert extract._resolve_month_day(13, 31, 2026, today=date(2026, 12, 20)) is None
 

@@ -201,11 +201,16 @@ def _resolve_month_day(mo: int, d: int, fallback_year: int, *, today: date | Non
 
     "1월 10일까지"처럼 연도 없는 날짜가 12월에 들어오면 fallback_year(기본값: 올해) 기준으로
     이미 지난 날짜가 돼 버려 value·n8n D-day 알림이 틀어진다.
+
+    fallback_year 가 올해일 때만 올린다 — 다른 해를 명시로 넘겼으면 그 해를 그대로 믿는다
+    (안 그러면 fallback_year=2026 으로 고정한 테스트가 2026-12-31부터 2027년을 받는다).
     """
     iso = _to_iso(fallback_year, mo, d)
     if iso is None:
         return None
     today = today or date.today()
+    if fallback_year != today.year:
+        return iso
     if (today - date.fromisoformat(iso)).days > _PAST_ROLLOVER_THRESHOLD_DAYS:
         return _to_iso(fallback_year + 1, mo, d) or iso
     return iso
