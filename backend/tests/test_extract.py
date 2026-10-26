@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from app import extract
@@ -171,6 +173,19 @@ def test_double_check_deadline_formats(document_text, value, expected):
         fallback_year=2026,
     )
     assert [m.value for m in marks] == expected
+
+
+def test_resolve_month_day_keeps_year_within_threshold():
+    assert extract._resolve_month_day(10, 31, 2026, today=date(2026, 10, 26)) == "2026-10-31"
+
+
+def test_resolve_month_day_rolls_to_next_year_when_far_past():
+    # 12월에 받은 고지서의 "1월 10일까지"는 fallback_year(올해) 기준 이미 지난 날짜가 된다 — 다음 해로 올려야 함.
+    assert extract._resolve_month_day(1, 10, 2026, today=date(2026, 12, 20)) == "2027-01-10"
+
+
+def test_resolve_month_day_returns_none_for_invalid_calendar_date():
+    assert extract._resolve_month_day(13, 31, 2026, today=date(2026, 12, 20)) is None
 
 
 def test_double_check_ignores_calendar_invalid_date():
