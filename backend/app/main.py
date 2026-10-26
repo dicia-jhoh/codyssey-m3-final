@@ -2,7 +2,9 @@
 
 import os
 import subprocess
+from collections import deque
 from pathlib import Path
+from time import monotonic
 
 from fastapi import BackgroundTasks
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -18,6 +20,8 @@ from .share import create_share, get_share
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
 MULTIPART_OVERHEAD = 64 * 1024  # multipart 경계·파일명 등 파일 외 메타데이터 여유
 MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
+DECODE_PER_MINUTE = max(1, int(os.environ.get("DECODE_PER_MINUTE", "10")))
+_decode_requests: dict[str, deque[float]] = {}
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
@@ -91,6 +95,25 @@ class LimitDecodeUpload:
 
 
 app.add_middleware(LimitDecodeUpload)
+
+
+@app.middleware("http")
+async def limit_decode_requests(request, call_next):
+    if request.method == "POST" and request.url.path == "/decode":
+        now = monotonic()
+        # 만료된 IP도 지워 새 주소가 계속 들어와도 기록이 쌓이지 않게 한다.
+        for ip, times in list(_decode_requests.items()):
+            while times and times[0] <= now - 60:
+                times.popleft()
+            if not times:
+                del _decode_requests[ip]
+        ip = request.client.host if request.client else "unknown"
+        times = _decode_requests.setdefault(ip, deque())
+        if len(times) >= DECODE_PER_MINUTE:
+            return JSONResponse({"detail": "잠시 뒤 다시 올려 주세요"}, status_code=429)
+        # await 전에 기록하므로 같은 이벤트 루프의 동시 요청도 한도를 공유한다.
+        times.append(now)
+    return await call_next(request)
 
 
 @app.middleware("http")
