@@ -1,4 +1,4 @@
-from app.agent import _todos_from_marks, classify, decode
+from app.agent import _how, _preparation_note, _todos_from_marks, classify, decode
 from app.schema import Mark, Todo
 
 
@@ -11,13 +11,16 @@ def test_classify_defaults_to_notice():
 
 
 def test_todos_from_marks_pairs_money_with_nearest_deadline():
+    # document Mark("신분증")가 있으면 how에 준비물 문구가 붙는다(이슈 #20-4).
     marks = [
         Mark(kind="money", text="금 48,200원", value="48200", bbox=[0.6, 0.18, 0.3, 0.06]),
         Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0.6, 0.26, 0.3, 0.06]),
         Mark(kind="document", text="신분증", value="", bbox=[0.1, 0.7, 0.5, 0.08]),
     ]
     todos = _todos_from_marks("고지서", marks)
-    assert todos == [Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="은행 또는 앱 납부")]
+    assert todos == [
+        Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="은행 또는 앱 납부 · 신분증 챙기기")
+    ]
 
 
 def test_todos_from_marks_pairs_each_money_with_closest_deadline():
@@ -50,6 +53,37 @@ def test_todos_from_marks_makes_card_for_deadline_only_document():
     marks = [Mark(kind="deadline", text="10월 31일까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1])]
     todos = _todos_from_marks("신청서", marks)
     assert todos == [Todo(title="신청서 내기", due="2026-10-31", amount=None, how="")]
+
+
+def test_todos_from_marks_deadline_only_uses_document_marks_as_how():
+    # 돈 없이 기한+서류만 있으면 how가 준비물 문구를 받는다(이슈 #20-4).
+    marks = [
+        Mark(kind="deadline", text="10월 31일까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1]),
+        Mark(kind="document", text="가족관계증명서", value="", bbox=[0, 0.5, 0.1, 0.1]),
+    ]
+    todos = _todos_from_marks("신청서", marks)
+    assert todos == [
+        Todo(title="신청서 내기", due="2026-10-31", amount=None, how="가족관계증명서 챙기기")
+    ]
+
+
+def test_preparation_note_joins_multiple_document_marks():
+    marks = [
+        Mark(kind="document", text="신분증", value="", bbox=[0, 0, 0.1, 0.1]),
+        Mark(kind="document", text="도장", value="", bbox=[0, 0.5, 0.1, 0.1]),
+        Mark(kind="money", text="무시됨", value="1", bbox=[0, 0, 0.1, 0.1]),
+    ]
+    assert _preparation_note(marks) == "신분증, 도장 챙기기"
+
+
+def test_preparation_note_empty_without_document_marks():
+    assert _preparation_note([Mark(kind="money", text="x", value="1", bbox=[0, 0, 0.1, 0.1])]) == ""
+
+
+def test_how_drops_empty_parts():
+    assert _how("은행 또는 앱 납부", "") == "은행 또는 앱 납부"
+    assert _how("", "신분증 챙기기") == "신분증 챙기기"
+    assert _how("", "") == ""
 
 
 def test_todos_from_marks_deadline_only_title_for_non_application_doc():

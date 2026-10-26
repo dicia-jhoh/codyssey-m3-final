@@ -56,6 +56,22 @@ def _title_for(doc_type: str, *, has_money: bool) -> str:
     return f"{doc_type} 내기"
 
 
+def _how(*parts: str) -> str:
+    """how 필드 조각을 화면 표기(" · ")와 같은 구분자로 잇는다 — 빈 조각은 버린다."""
+    return " · ".join(p for p in parts if p)
+
+
+def _preparation_note(marks: list[Mark]) -> str:
+    """document Mark(챙겨야 할 서류)를 짧은 준비물 문구로 합친다.
+
+    document Mark에는 "어느 할 일을 위한 서류인지" 정보가 없어(money/deadline처럼
+    bbox로 짝지을 기준이 없다 — 서류 안내는 보통 문서 전체에 한 번 적힌다), 모든
+    할 일 카드에 공통 준비물로 붙인다.
+    """
+    docs = [m.text for m in marks if m.kind == "document"]
+    return f"{', '.join(docs)} 챙기기" if docs else ""
+
+
 def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:
     """Mark에서 할 일 카드를 만든다(②의 Mark에서 할 일 카드를 만드는 자리).
 
@@ -64,12 +80,15 @@ def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:
     카드 한 장으로 만든다(amount=None) — 신청서·가정통신문처럼 돈 없이 기한만 있는
     문서도 할 일이다(FR-05는 납부만이 아니라 「할 일」 전체를 다룬다).
 
+    document Mark는 how 필드의 준비물 문구로 쓴다(_preparation_note) — 이슈 #20 4번.
+
     Mark에는 "뭘 위한 돈/기한인지" 같은 의미 정보가 없다(그건 근거/rag.py 쪽 몫) —
     제목은 지금은 문서 종류 + 카드 종류로만 만든다. rag 연동이 들어오면 더 구체적인
     제목으로 교체할 수 있는 자리.
     """
     money_marks = [m for m in marks if m.kind == "money"]
     deadline_marks = [m for m in marks if m.kind == "deadline"]
+    prep = _preparation_note(marks)
 
     todos: list[Todo] = []
     paired = [False] * len(deadline_marks)
@@ -90,7 +109,7 @@ def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:
                 title=_title_for(doc_type, has_money=True),
                 due=deadline.value if deadline else None,
                 amount=amount,
-                how="은행 또는 앱 납부",
+                how=_how("은행 또는 앱 납부", prep),
             )
         )
 
@@ -102,7 +121,7 @@ def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:
                 title=_title_for(doc_type, has_money=False),
                 due=deadline.value,
                 amount=None,
-                how="",
+                how=_how(prep),
             )
         )
 

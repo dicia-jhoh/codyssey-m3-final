@@ -33,6 +33,7 @@ window.MEMBERS.jiyoung = {
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/39", // n8n 스펙, 이정관 참고용
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/40", // testset 합성 예시, 김기훈 영역 제안
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/42", // 법령 조문 2건 추가, 김기훈 영역(README 백로그 이어서)
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/149", // 이슈 #20 마지막 4번, 오주현 영역 제안
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
