@@ -346,6 +346,9 @@ def test_legacy_bbox_is_clipped_not_shifted(bbox, expected):
 
 def test_legacy_bbox_wholly_outside_is_dropped():
     marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": [-0.5, 0.2, 0.2, 0.1]}])
+    assert marks == []
+
+
 def test_money_without_won_matches_grouped_number_in_document():
     """표 칸의 「6,170」처럼 「원」이 없어도 쉼표 금액이면 대조한다(10-23 실제 주민세 고지서)."""
     marks = extract._double_check(
