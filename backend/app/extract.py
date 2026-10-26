@@ -193,13 +193,31 @@ def _to_iso(y: int, mo: int, d: int) -> str | None:
         return None  # 13월·32일처럼 달력에 없는 값 — 모델이 잘못 읽은 것으로 보고 버린다
 
 
+_PAST_ROLLOVER_THRESHOLD_DAYS = 60  # 이보다 더 과거면 연도 없는 날짜를 다음 해로 본다(이슈 #13)
+
+
+def _resolve_month_day(mo: int, d: int, fallback_year: int, *, today: date | None = None) -> str | None:
+    """fallback_year 로 계산한 날짜가 오늘보다 크게 과거면 다음 해로 올린다.
+
+    "1월 10일까지"처럼 연도 없는 날짜가 12월에 들어오면 fallback_year(기본값: 올해) 기준으로
+    이미 지난 날짜가 돼 버려 value·n8n D-day 알림이 틀어진다.
+    """
+    iso = _to_iso(fallback_year, mo, d)
+    if iso is None:
+        return None
+    today = today or date.today()
+    if (today - date.fromisoformat(iso)).days > _PAST_ROLLOVER_THRESHOLD_DAYS:
+        return _to_iso(fallback_year + 1, mo, d) or iso
+    return iso
+
+
 def _dates(text: str, *, fallback_year: int):
     """본문의 날짜를 "YYYY.MM.DD" 형식부터, 다음 "MM월 DD일" 형식 순서로 ISO 로 낸다(달력에 없으면 None)."""
     for y, mo, d in _DATE_RE_FULL.findall(text):
         yield _to_iso(int(y), int(mo), int(d))
     # 연도가 있는 날짜는 지우고 찾는다 — 안 지우면 "2027년 1월 15일" 의 "1월 15일" 에 올해가 붙는다
     for mo, d in _DATE_RE_MD.findall(_DATE_RE_FULL.sub(" ", text)):
-        yield _to_iso(fallback_year, int(mo), int(d))
+        yield _resolve_month_day(int(mo), int(d), fallback_year)
 
 
 def _parse_date_iso(text: str, *, fallback_year: int) -> str | None:
@@ -348,6 +366,10 @@ def _main(argv: list[str] | None = None) -> int:
         "--api-key", default=os.environ.get("LLM_API_KEY", ""), help="기본값: LLM_API_KEY 환경변수"
     )
     args = parser.parse_args(argv)
+
+    # 이게 없으면 extract() 내부의 log.exception()이 안 보여서, 호출/파싱이 왜 실패했는지
+    # (404 모델 없음, 400 media_type 등) CLI에서 끝까지 숨겨진다(이슈 #13 5번).
+    logging.basicConfig(level=logging.INFO)
 
     if not args.api_key:
         print("[!] API 키 없음 — LLM_API_KEY 환경변수를 설정하거나 --api-key로 넘기세요")

@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from app import extract
@@ -173,6 +175,19 @@ def test_double_check_deadline_formats(document_text, value, expected):
     assert [m.value for m in marks] == expected
 
 
+def test_resolve_month_day_keeps_year_within_threshold():
+    assert extract._resolve_month_day(10, 31, 2026, today=date(2026, 10, 26)) == "2026-10-31"
+
+
+def test_resolve_month_day_rolls_to_next_year_when_far_past():
+    # 12월에 받은 고지서의 "1월 10일까지"는 fallback_year(올해) 기준 이미 지난 날짜가 된다 — 다음 해로 올려야 함.
+    assert extract._resolve_month_day(1, 10, 2026, today=date(2026, 12, 20)) == "2027-01-10"
+
+
+def test_resolve_month_day_returns_none_for_invalid_calendar_date():
+    assert extract._resolve_month_day(13, 31, 2026, today=date(2026, 12, 20)) is None
+
+
 def test_double_check_ignores_calendar_invalid_date():
     marks = extract._double_check(
         document_text="납부기한: 13월 31일까지",
@@ -331,6 +346,9 @@ def test_legacy_bbox_is_clipped_not_shifted(bbox, expected):
 
 def test_legacy_bbox_wholly_outside_is_dropped():
     marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": [-0.5, 0.2, 0.2, 0.1]}])
+    assert marks == []
+
+
 def test_money_without_won_matches_grouped_number_in_document():
     """표 칸의 「6,170」처럼 「원」이 없어도 쉼표 금액이면 대조한다(10-23 실제 주민세 고지서)."""
     marks = extract._double_check(
