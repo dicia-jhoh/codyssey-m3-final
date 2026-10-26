@@ -14,7 +14,7 @@ window.MEMBERS.kihoon = {
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
-    title: "",
-    problem: "", // 누가, 어떤 상황에서, 무엇 때문에 곤란한가
+    title: "이름 spelling 교정",
+    problem: "제 성명의 영문자가 아니어서 정정하였습니다.", // 누가, 어떤 상황에서, 무엇 때문에 곤란한가
   },
 };
