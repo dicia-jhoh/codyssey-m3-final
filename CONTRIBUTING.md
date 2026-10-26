@@ -9,7 +9,7 @@
 |---|---|
 | 오주현 | `content/members/juhyeon.js` |
 | 이정관 | `content/members/jeonggwan.js` |
-| 김기훈 | `content/members/kihoon.js` |
+| 김기훈 | `content/members/gihoon.js` |
 | 황지영 | `content/members/jiyoung.js` |
 | 송유영 | `content/members/yuyoung.js` |
 | 송유진 | `content/members/youjin.js` |
