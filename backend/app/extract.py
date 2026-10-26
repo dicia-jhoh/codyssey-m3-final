@@ -367,6 +367,10 @@ def _main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    # 이게 없으면 extract() 내부의 log.exception()이 안 보여서, 호출/파싱이 왜 실패했는지
+    # (404 모델 없음, 400 media_type 등) CLI에서 끝까지 숨겨진다(이슈 #13 5번).
+    logging.basicConfig(level=logging.INFO)
+
     if not args.api_key:
         print("[!] API 키 없음 — LLM_API_KEY 환경변수를 설정하거나 --api-key로 넘기세요")
         return 1
