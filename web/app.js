@@ -4,6 +4,7 @@
 const $ = (id) => document.getElementById(id);
 
 let currentDecoded = null; // "가족에게 보내기"가 다시 보낼 최근 해독 결과
+let previewUrl = null;
 let largeTextEnabled = false;
 try {
   largeTextEnabled = localStorage.getItem("largeText") === "true";
@@ -70,7 +71,10 @@ if (sharedId) {
 $("photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  $("preview").src = URL.createObjectURL(file);
+  const previousPreviewUrl = previewUrl;
+  previewUrl = URL.createObjectURL(file);
+  $("preview").src = previewUrl;
+  if (previousPreviewUrl) URL.revokeObjectURL(previousPreviewUrl);
   $("status").textContent = "고지서를 읽고 있어요…";
   $("result").hidden = true;
 
@@ -92,6 +96,8 @@ $("photo").addEventListener("change", async (e) => {
   } catch (err) {
     console.error(err);
     $("status").textContent = "사진을 읽지 못했어요. 밝은 곳에서 다시 찍어 올려 주세요.";
+  } finally {
+    e.target.value = "";
   }
 });
 
