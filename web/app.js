@@ -162,6 +162,8 @@ photoInput.addEventListener("change", async (e) => {
     }
     show(await r.json());
     $("status").textContent = "";
+    // 결과가 사진 아래라 폰에선 화면 밖일 수 있다 — 결과 제목이 보이게 내려 준다
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
     console.error(err);
     $("status").textContent = "사진을 읽지 못했어요. 밝은 곳에서 다시 찍어 올려 주세요.";
