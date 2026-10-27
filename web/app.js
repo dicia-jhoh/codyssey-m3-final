@@ -301,6 +301,8 @@ function show(d) {
       dueElement.className = "due";
       dueElement.textContent = due;
       if (daysRemaining < 0) dueElement.classList.add("overdue");
+      // 오늘~3일 남은 할 일은 눈에 띄게 — 기한 없는 할 일(null)은 빼고
+      else if (daysRemaining !== null && daysRemaining <= 3) dueElement.classList.add("soon");
       details.className = "details";
       // 금액·방법이 둘 다 없으면 빈 줄, 하나만 있으면 앞에 「 · 」 없이
       details.textContent = [money, t.how].filter(Boolean).join(" · ");
