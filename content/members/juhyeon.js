@@ -74,6 +74,15 @@ window.MEMBERS.juhyeon = {
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/196",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/198",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/199",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/200",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/201",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/202",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/203",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/204",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/205",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/206",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/207",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/208",
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
