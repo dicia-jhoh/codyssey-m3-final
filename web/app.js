@@ -2,6 +2,28 @@
 // 백엔드가 화면을 같이 내준다(/app/) — API 는 같은 주소다
 
 const $ = (id) => document.getElementById(id);
+const MAX_PHOTO_DIMENSION = 2000;
+
+async function prepareUploadPhoto(file) {
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+    const longestSide = Math.max(bitmap.width, bitmap.height);
+    if (longestSide <= MAX_PHOTO_DIMENSION) return file;
+
+    const scale = MAX_PHOTO_DIMENSION / longestSide;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const jpeg = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    return jpeg ? new File([jpeg], "photo.jpg", { type: "image/jpeg", lastModified: file.lastModified }) : file;
+  } catch {
+    return file;
+  } finally {
+    bitmap?.close();
+  }
+}
 
 let currentDecoded = null; // "가족에게 보내기"가 다시 보낼 최근 해독 결과
 let largeTextEnabled = false;
@@ -75,7 +97,8 @@ $("photo").addEventListener("change", async (e) => {
   $("result").hidden = true;
 
   const form = new FormData();
-  form.append("file", file);
+  const uploadFile = await prepareUploadPhoto(file);
+  form.append("file", uploadFile, uploadFile.name || file.name);
   try {
     const r = await fetch("/decode", { method: "POST", body: form });
     if (!r.ok) {
