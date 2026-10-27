@@ -3,6 +3,7 @@
 import os
 import subprocess
 from collections import deque
+from math import ceil
 from pathlib import Path
 from time import monotonic
 
@@ -110,7 +111,11 @@ async def limit_decode_requests(request, call_next):
         ip = request.client.host if request.client else "unknown"
         times = _decode_requests.setdefault(ip, deque())
         if len(times) >= DECODE_PER_MINUTE:
-            return JSONResponse({"detail": "잠시 뒤 다시 올려 주세요"}, status_code=429)
+            retry_after = max(1, ceil(times[0] + 60 - now))
+            return JSONResponse(
+                {"detail": "잠시 뒤 다시 올려 주세요"}, status_code=429,
+                headers={"Retry-After": str(retry_after)},
+            )
         # await 전에 기록하므로 같은 이벤트 루프의 동시 요청도 한도를 공유한다.
         times.append(now)
     return await call_next(request)
