@@ -28,7 +28,38 @@ const completedTodos = loadCompletedTodos();
 function loadCompletedTodos() {
   try {
     const saved = JSON.parse(localStorage.getItem("completedTodos") || "[]");
-    return new Set(Array.isArray(saved) ? saved.filter((key) => typeof key === "string") : []);
+    if (!Array.isArray(saved)) return new Set();
+
+    const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - 30);
+    const validKeys = saved.filter((key) => {
+      if (typeof key !== "string") return false;
+      let parts;
+      try {
+        parts = JSON.parse(key);
+      } catch {
+        return false;
+      }
+      if (
+        !Array.isArray(parts) ||
+        parts.length !== 4 ||
+        typeof parts[0] !== "string" ||
+        typeof parts[1] !== "string" ||
+        typeof parts[2] !== "string" ||
+        (parts[3] !== null && !Number.isInteger(parts[3]))
+      ) return false;
+
+      if (parts[2]) {
+        const dueDate = new Date(`${parts[2]}T00:00:00`);
+        if (Number.isFinite(dueDate.getTime()) && dueDate < cutoff) return false;
+      }
+      return true;
+    });
+    try {
+      localStorage.setItem("completedTodos", JSON.stringify(validKeys));
+    } catch {}
+    return new Set(validKeys);
   } catch {
     return new Set();
   }
@@ -200,7 +231,7 @@ function show(d) {
       const dueElement = document.createElement("span");
       const details = document.createElement("span");
       const button = document.createElement("button");
-      const key = JSON.stringify([t.title, t.due || ""]);
+      const key = JSON.stringify([d.title, t.title, t.due || "", t.amount ?? null]);
       const completed = completedTodos.has(key);
       title.textContent = t.title;
       dueElement.className = "due";
