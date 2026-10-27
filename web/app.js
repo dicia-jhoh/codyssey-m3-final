@@ -26,6 +26,7 @@ async function prepareUploadPhoto(file) {
 }
 
 let currentDecoded = null; // "가족에게 보내기"가 다시 보낼 최근 해독 결과
+let previewUrl = null;
 let largeTextEnabled = false;
 try {
   largeTextEnabled = localStorage.getItem("largeText") === "true";
@@ -126,7 +127,10 @@ photoInput.addEventListener("change", async (e) => {
   if (!file || photoInput.disabled) return;
   photoInput.disabled = true;
   $("upload-section").classList.add("is-loading");
-  $("preview").src = URL.createObjectURL(file);
+  const previousPreviewUrl = previewUrl;
+  previewUrl = URL.createObjectURL(file);
+  $("preview").src = previewUrl;
+  if (previousPreviewUrl) URL.revokeObjectURL(previousPreviewUrl);
   $("result").hidden = true;
   const startedAt = Date.now();
   const updateProgress = () => {
@@ -160,6 +164,7 @@ photoInput.addEventListener("change", async (e) => {
     clearInterval(progressTimer);
     photoInput.disabled = false;
     $("upload-section").classList.remove("is-loading");
+    e.target.value = "";
   }
 });
 
