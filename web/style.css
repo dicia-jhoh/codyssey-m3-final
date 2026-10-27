@@ -24,6 +24,7 @@ h1 { margin: 0; line-height: 0; }
   border: 0;
 }
 .upload:focus-within { outline: 3px solid var(--deadline); outline-offset: 3px; }
+#upload-section.is-loading .upload { opacity: 0.55; cursor: wait; }
 .banner { padding: 8px 12px; background: #fff3c4; border-radius: 8px; font-weight: 700; }
 .ai-notice { font-size: 0.9rem; color: #555; }
 .paper { position: relative; }

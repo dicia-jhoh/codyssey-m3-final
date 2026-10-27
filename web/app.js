@@ -120,12 +120,22 @@ if (sharedId) {
     });
 }
 
-$("photo").addEventListener("change", async (e) => {
+const photoInput = $("photo");
+photoInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
-  if (!file) return;
+  if (!file || photoInput.disabled) return;
+  photoInput.disabled = true;
+  $("upload-section").classList.add("is-loading");
   $("preview").src = URL.createObjectURL(file);
-  $("status").textContent = "고지서를 읽고 있어요…";
   $("result").hidden = true;
+  const startedAt = Date.now();
+  const updateProgress = () => {
+    const seconds = Math.floor((Date.now() - startedAt) / 1000);
+    const waiting = seconds > 10 ? " · 조금만 더 기다려 주세요" : "";
+    $("status").textContent = `고지서를 읽고 있어요… ${seconds}초${waiting}`;
+  };
+  updateProgress();
+  const progressTimer = setInterval(updateProgress, 1000);
 
   const form = new FormData();
   const uploadFile = await prepareUploadPhoto(file);
@@ -146,6 +156,10 @@ $("photo").addEventListener("change", async (e) => {
   } catch (err) {
     console.error(err);
     $("status").textContent = "사진을 읽지 못했어요. 밝은 곳에서 다시 찍어 올려 주세요.";
+  } finally {
+    clearInterval(progressTimer);
+    photoInput.disabled = false;
+    $("upload-section").classList.remove("is-loading");
   }
 });
 
