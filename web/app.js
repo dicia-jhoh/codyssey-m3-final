@@ -148,6 +148,11 @@ photoInput.addEventListener("change", async (e) => {
     const r = await fetch("/decode", { method: "POST", body: form });
     if (!r.ok) {
       const body = await r.json().catch(() => ({}));
+      const retryAfter = r.headers.get("Retry-After");
+      if (r.status === 429 && retryAfter && /^\d+$/.test(retryAfter)) {
+        $("status").textContent = `${retryAfter}초 뒤에 다시 올려 주세요`;
+        return;
+      }
       // 4xx detail 은 서버가 사용자에게 하는 말(크기·형식) — 다시 찍어도 안 되니 그대로 보여 준다
       if (r.status < 500 && typeof body.detail === "string") {
         $("status").textContent = body.detail;
