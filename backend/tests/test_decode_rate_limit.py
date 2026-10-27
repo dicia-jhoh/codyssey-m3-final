@@ -53,3 +53,23 @@ def test_window_expires_and_old_ip_is_removed(monkeypatch, decode):
             assert upload(second).status_code == 200
         assert "192.0.2.1" not in main._decode_requests
         assert upload(first).status_code == 200
+
+
+def test_retry_after_counts_down_and_disappears_on_success(monkeypatch, decode):
+    now = [100.0]
+    monkeypatch.setattr(main, "monotonic", lambda: now[0])
+    monkeypatch.setattr(main, "DECODE_PER_MINUTE", 1)
+    with TestClient(main.app, client=("192.0.2.1", 1234)) as client:
+        response = upload(client)
+        assert response.status_code == 200
+        assert "Retry-After" not in response.headers
+        for timestamp, expected in [(100.0, "60"), (130.0, "30"), (159.5, "1")]:
+            now[0] = timestamp
+            response = upload(client)
+            assert response.status_code == 429
+            assert response.headers["Retry-After"] == expected
+        now[0] = 160.0
+        response = upload(client)
+        assert response.status_code == 200
+        assert "Retry-After" not in response.headers
+        assert decode.call_count == 2
