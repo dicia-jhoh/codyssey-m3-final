@@ -213,6 +213,12 @@ $("shareBtn").addEventListener("click", async () => {
   }
 });
 
+function emptyListItem(message) {
+  const item = document.createElement("li");
+  item.textContent = message;
+  return item;
+}
+
 function show(d) {
   currentDecoded = d;
   $("sample").hidden = !d.sample;
@@ -246,8 +252,8 @@ function show(d) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  $("todos").replaceChildren(
-    ...d.todos.map((t) => {
+  const todoItems = d.todos.length
+    ? d.todos.map((t) => {
       const li = document.createElement("li");
       const dueDate = t.due ? new Date(`${t.due}T00:00:00`) : null;
       const validDueDate = dueDate && Number.isFinite(dueDate.getTime());
@@ -293,10 +299,11 @@ function show(d) {
       li.append(title, dueElement, details, button);
       return li;
     })
-  );
+    : [emptyListItem("해야 할 일은 찾지 못했어요. 원문을 함께 확인해 주세요.")];
+  $("todos").replaceChildren(...todoItems);
 
-  $("basis").replaceChildren(
-    ...d.basis.map((b) => {
+  const basisItems = d.basis.length
+    ? d.basis.map((b) => {
       const li = document.createElement("li");
       li.textContent = b.claim;
       const q = document.createElement("blockquote");
@@ -304,7 +311,8 @@ function show(d) {
       li.append(q);
       return li;
     })
-  );
+    : [emptyListItem("이 문서에서 법령 근거는 찾지 못했어요.")];
+  $("basis").replaceChildren(...basisItems);
 
   $("shareResult").textContent = "";
   $("shareBtn").hidden = !!sharedId; // 손주 모드 화면에선 또 보내기 버튼을 안 띄운다
