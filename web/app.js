@@ -250,7 +250,18 @@ function show(d) {
     })
   );
 
-  const today = new Date();
+  let today = new Date();
+  const requestedToday = d.sample ? new URLSearchParams(location.search).get("today") : null;
+  const dateParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(requestedToday || "");
+  if (dateParts) {
+    const [year, month, day] = dateParts.slice(1).map(Number);
+    const override = new Date(year, month - 1, day);
+    if (
+      override.getFullYear() === year &&
+      override.getMonth() === month - 1 &&
+      override.getDate() === day
+    ) today = override;
+  }
   today.setHours(0, 0, 0, 0);
   const todoItems = d.todos.length
     ? d.todos.map((t) => {
