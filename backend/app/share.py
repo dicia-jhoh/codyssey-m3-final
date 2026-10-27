@@ -53,3 +53,12 @@ def get_share(share_id: str, *, now: float | None = None) -> Decoded | None:
         db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
         row = db.execute("SELECT body FROM shares WHERE id = ?", (share_id,)).fetchone()
     return Decoded.model_validate_json(row[0]) if row else None
+
+
+def share_expires_at(share_id: str) -> float | None:
+    """공유가 사라지는 시각(유닉스 초). 없거나 이미 지났으면 None."""
+    with _lock, closing(_connect()) as db:
+        row = db.execute("SELECT expires_at FROM shares WHERE id = ?", (share_id,)).fetchone()
+    if row is None or row[0] < time.time():
+        return None
+    return row[0]

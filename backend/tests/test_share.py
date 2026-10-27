@@ -6,7 +6,7 @@ import time
 
 from app import share
 from app.schema import Decoded
-from app.share import create_share, get_share
+from app.share import create_share, get_share, share_expires_at
 
 
 def _decoded() -> Decoded:
@@ -20,6 +20,14 @@ def test_create_and_get_share_round_trip():
 
 def test_unknown_share_id_returns_none():
     assert get_share("없는-아이디") is None
+
+
+def test_share_expires_at_is_ttl_after_creation():
+    before = time.time()
+    share_id = create_share(_decoded(), ttl_seconds=60)
+    expires = share_expires_at(share_id)
+    assert expires is not None and before + 60 <= expires <= time.time() + 60
+    assert share_expires_at("없는-아이디") is None
 
 
 def test_expired_share_returns_none_and_is_removed():
