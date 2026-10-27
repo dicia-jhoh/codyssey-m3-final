@@ -275,8 +275,17 @@ function show(d) {
     ) today = override;
   }
   today.setHours(0, 0, 0, 0);
-  const todoItems = d.todos.length
-    ? d.todos.map((t) => {
+  // 기한이 가까운 할 일부터 — 기한이 없거나 이상한 날짜는 맨 뒤, 같으면 원래 순서
+  const dueTime = (t) => {
+    const time = t.due ? new Date(`${t.due}T00:00:00`).getTime() : NaN;
+    return Number.isFinite(time) ? time : Infinity;
+  };
+  const sortedTodos = [...d.todos].sort((a, b) => {
+    const [x, y] = [dueTime(a), dueTime(b)];
+    return x === y ? 0 : x < y ? -1 : 1;
+  });
+  const todoItems = sortedTodos.length
+    ? sortedTodos.map((t) => {
       const li = document.createElement("li");
       const dueDate = t.due ? new Date(`${t.due}T00:00:00`) : null;
       const validDueDate = dueDate && Number.isFinite(dueDate.getTime());
