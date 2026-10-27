@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="assets/brand/ttobak-horizontal.svg" alt="또박또박" width="320">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/ttobak-horizontal-dark.svg">
+  <img src="assets/brand/ttobak-horizontal.svg" alt="또박또박" width="320">
+</picture>
 
 ### 고지서 사진 한 장이면 「얼마를 · 언제까지 · 무엇을」
 
