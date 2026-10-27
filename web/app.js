@@ -255,6 +255,12 @@ function show(d) {
       box.append(text);
       box.addEventListener("click", () => {
         const expanded = box.getAttribute("aria-expanded") === "true";
+        // 한 번에 하나만 — 열려 있던 다른 표시의 글자는 접는다(겹치면 읽기 어렵다)
+        for (const other of $("marks").querySelectorAll('.mark[aria-expanded="true"]')) {
+          if (other === box) continue;
+          other.setAttribute("aria-expanded", "false");
+          other.querySelector(".mark-text").hidden = true;
+        }
         box.setAttribute("aria-expanded", String(!expanded));
         text.hidden = expanded;
       });
