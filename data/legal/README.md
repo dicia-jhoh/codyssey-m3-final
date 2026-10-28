@@ -5,6 +5,8 @@
 `data/legal/chroma/`에 생기는데 `.gitignore` 대상이라 — 이 JSONL이 진짜
 원본이고, DB는 이 파일에서 언제든 다시 만들 수 있는 생성물이다).
 
+법제처 Open API 키(`LAW_OC`)는 팀 공용 `parapuda` 를 쓴다 — 따로 신청할 필요 없다(`backend/.env.example`).
+
 ## 형식
 
 `data/testset/labels.jsonl`과 같은 패턴 — 한 줄 = JSON 객체 하나.
