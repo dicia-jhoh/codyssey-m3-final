@@ -1,4 +1,5 @@
 import subprocess
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -57,6 +58,13 @@ def test_share_round_trip():
 
     assert shared.status_code == 200
     assert shared.json() == decode_body
+
+
+def test_share_returns_expiry_about_30_days_later():
+    decode_body = client.post("/decode", files={"file": ("a.jpg", b"fake", "image/jpeg")}).json()
+    body = client.post("/share", json=decode_body).json()
+    left = datetime.fromisoformat(body["expires_at"]) - datetime.now(UTC)
+    assert timedelta(days=29, hours=23) < left <= timedelta(days=30)
 
 
 def test_share_rejects_oversized_body():

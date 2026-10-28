@@ -3,6 +3,7 @@
 import os
 import subprocess
 from collections import deque
+from datetime import UTC, datetime
 from math import ceil
 from pathlib import Path
 from time import monotonic
@@ -16,7 +17,7 @@ from starlette.concurrency import run_in_threadpool
 from .agent import decode
 from .schema import Decoded
 from .notify import notify_deadlines
-from .share import create_share, get_share
+from .share import create_share, get_share, share_expires_at
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
 MULTIPART_OVERHEAD = 64 * 1024  # multipart 경계·파일명 등 파일 외 메타데이터 여유
@@ -158,7 +159,11 @@ def share_decoded(decoded: Decoded) -> dict:
     # 인증 없는 공개 주소라 크기를 안 막으면 아무나 큰 JSON 으로 서버 메모리를 채운다
     if len(decoded.model_dump_json().encode()) > MAX_SHARE_BYTES:
         raise HTTPException(413, "공유할 내용이 너무 커요")
-    return {"share_id": create_share(decoded)}
+    share_id = create_share(decoded)
+    expires_at = share_expires_at(share_id)
+    # 화면이 「며칠까지 열려요」를 보여 줄 수 있게 만료 시각(UTC ISO)도 같이 준다
+    expires_iso = datetime.fromtimestamp(expires_at, UTC).isoformat(timespec="seconds") if expires_at else None
+    return {"share_id": share_id, "expires_at": expires_iso}
 
 
 @app.get("/share/{share_id}", response_model=Decoded)
