@@ -217,6 +217,7 @@ $("shareBtn").addEventListener("click", async () => {
     const input = document.createElement("input");
     input.readOnly = true;
     input.value = link;
+    input.setAttribute("aria-label", "가족에게 보낼 링크");
     input.onclick = () => input.select();
     $("shareResult").append(label, input);
   } catch (err) {
