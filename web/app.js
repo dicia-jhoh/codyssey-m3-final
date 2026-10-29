@@ -347,7 +347,7 @@ function show(d) {
       const li = document.createElement("li");
       li.textContent = b.claim;
       const q = document.createElement("blockquote");
-      q.textContent = `원문: ${b.quote}${b.law ? ` (${b.law})` : ""}`;
+      q.textContent = `고지서에 적힌 말: ${b.quote}${b.law ? ` (${b.law})` : ""}`;
       li.append(q);
       return li;
     })
