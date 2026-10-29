@@ -241,7 +241,7 @@ function show(d) {
   $("marks").replaceChildren(
     ...d.marks.map((m) => {
       const box = document.createElement("button");
-      const kindLabel = { money: "낼 돈", deadline: "기한", document: "챙길 서류" }[m.kind] || "원문";
+      const kindLabel = { money: "낼 돈", deadline: "기한", document: "챙길 서류" }[m.kind] || "고지서 글";
       box.className = `mark ${m.kind}`;
       box.type = "button";
       box.setAttribute("aria-label", `${kindLabel}: ${m.text}`);
