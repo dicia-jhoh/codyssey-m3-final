@@ -9,6 +9,7 @@ h1 { margin: 0; line-height: 0; }
 .header-top .logo { height: 56px; width: auto; max-width: 100%; }
 .text-size { flex: none; padding: 8px 10px; font: 700 0.85rem/1.2 system-ui, sans-serif; color: #111; background: #fff; border: 2px solid #111; border-radius: 6px; cursor: pointer; white-space: nowrap; }
 .text-size:focus-visible { outline: 3px solid var(--deadline); outline-offset: 2px; }
+.text-size { min-height: 44px; } /* 손가락으로 누르기 쉬운 높이 */
 .upload { position: relative; display: block; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 700;
   color: #fff; background: #111; border-radius: 12px; cursor: pointer; }
 .upload input {
