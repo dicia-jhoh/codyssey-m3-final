@@ -26,6 +26,8 @@ window.MEMBERS.jeonggwan = {
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/156",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/227",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/231",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/247",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/248",
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
