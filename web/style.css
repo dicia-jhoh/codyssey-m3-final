@@ -54,5 +54,6 @@ blockquote { margin: 4px 0 12px; padding-left: 10px; border-left: 3px solid #ccc
 .share { display: block; width: 100%; margin-top: 16px; padding: 16px; font-size: 1.05rem; font-weight: 700;
   color: #111; background: #fff; border: 2px solid #111; border-radius: 12px; cursor: pointer; }
 .share[hidden] { display: none; } /* display:block이 기본 [hidden]{display:none}을 덮어써서 명시로 되살림 */
+.share:focus-visible { outline: 3px solid var(--deadline); outline-offset: 2px; }
 .share-result { margin-top: 8px; }
 .share-result input { width: 100%; box-sizing: border-box; padding: 10px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; }
