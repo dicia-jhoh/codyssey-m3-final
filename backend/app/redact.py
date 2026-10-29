@@ -24,7 +24,13 @@ def _hide_account(m: re.Match) -> str:
     return "[계좌번호 가림]" if digits >= 10 else m.group(0)
 
 
+# 전화번호: 0 으로 시작하는 지역·휴대폰 번호 - 3~4자리 - 4자리. 계좌번호와 모양이 비슷해서
+# 계좌보다 먼저 가린다 — 안 그러면 「[계좌번호 가림]」으로 잘못 적힌다
+_PHONE = re.compile(r"(?<![\d-])0\d{1,2}-\d{3,4}-\d{4}(?![\d-])")
+
+
 def redact(text: str) -> str:
-    """주민번호는 앞 6자리와 성별 숫자만 남기고, 계좌번호는 통째로 가린다."""
+    """주민번호는 앞 6자리와 성별 숫자만 남기고, 전화번호·계좌번호는 통째로 가린다."""
     text = _RRN.sub(lambda m: f"{m.group(1)}-{m.group(2)}******", text)
+    text = _PHONE.sub("[전화번호 가림]", text)
     return _ACCOUNT.sub(_hide_account, text)
