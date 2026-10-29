@@ -351,7 +351,7 @@ function show(d) {
       li.append(q);
       return li;
     })
-    : [emptyListItem("이 문서에서 법령 근거는 찾지 못했어요.")];
+    : [emptyListItem("이 고지서에서 관련 법 조항은 찾지 못했어요.")];
   $("basis").replaceChildren(...basisItems);
 
   $("shareResult").textContent = "";
