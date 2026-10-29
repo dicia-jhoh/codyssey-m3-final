@@ -337,7 +337,7 @@ function show(d) {
       li.append(title, dueElement, details, button);
       return li;
     })
-    : [emptyListItem("해야 할 일은 찾지 못했어요. 원문을 함께 확인해 주세요.")];
+    : [emptyListItem("해야 할 일은 찾지 못했어요. 받은 고지서를 함께 확인해 주세요.")];
   $("todos").replaceChildren(...todoItems);
 
   const basisItems = d.basis.length
