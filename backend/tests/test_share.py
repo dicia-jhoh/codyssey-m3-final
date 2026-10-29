@@ -30,6 +30,18 @@ def test_share_expires_at_is_ttl_after_creation():
     assert share_expires_at("없는-아이디") is None
 
 
+def test_share_expiry_lookup_before_and_after_expiration(monkeypatch):
+    monkeypatch.setattr(share.time, "time", lambda: 100.0)
+    share_id = create_share(_decoded(), ttl_seconds=10)
+    assert share_expires_at(share_id) == 110.0
+
+    monkeypatch.setattr(share.time, "time", lambda: 110.0)
+    assert share_expires_at(share_id) == 110.0
+
+    monkeypatch.setattr(share.time, "time", lambda: 111.0)
+    assert share_expires_at(share_id) is None
+
+
 def test_expired_share_returns_none_and_is_removed():
     share_id = create_share(_decoded(), ttl_seconds=10)
     future = time.time() + 20  # TTL(10초)보다 더 지난 시점
