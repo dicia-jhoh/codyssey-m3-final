@@ -325,12 +325,10 @@ function show(d) {
       details.textContent = [money, t.how].filter(Boolean).join(" · ");
       button.type = "button";
       button.className = "todo-complete";
-      button.setAttribute("aria-pressed", String(completed));
       button.textContent = completed ? "아직 안 했어요" : "다 했어요";
       if (completed) li.classList.add("completed");
       button.addEventListener("click", () => {
         const isCompleted = li.classList.toggle("completed");
-        button.setAttribute("aria-pressed", String(isCompleted));
         button.textContent = isCompleted ? "아직 안 했어요" : "다 했어요";
         if (isCompleted) completedTodos.add(key);
         else completedTodos.delete(key);
