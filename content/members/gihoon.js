@@ -14,6 +14,9 @@ window.MEMBERS.gihoon = {
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/144",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/147",
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/230",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/268",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/269",
+    "https://github.com/dicia-jhoh/codyssey-m3-final/pull/270",
   ],
   // 주제 후보 — 제안이 없으면 비워 둔다
   pitch: {
