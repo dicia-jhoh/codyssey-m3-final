@@ -29,4 +29,5 @@ PY
 check /app/ 200
 check / 200
 check /decode 400 -F 'file=@-;filename=empty.jpg;type=image/jpeg' < /dev/null
+check /share/no-such-share 404
 printf '[OK] 배포 확인 완료\n'
