@@ -26,6 +26,7 @@ if health.get("ok") is not True:
     raise SystemExit(1)
 print("[OK] health ok=true, commit=" + str(health.get("commit", "unknown")))
 PY
+check /app 307
 check /app/ 200
 check / 200
 check /decode 400 -F 'file=@-;filename=empty.jpg;type=image/jpeg' < /dev/null
