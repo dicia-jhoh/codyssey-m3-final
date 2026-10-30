@@ -7,6 +7,11 @@ Wants=network-online.target
 
 [Service]
 User=ubuntu
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/codyssey-m3-final/data
 WorkingDirectory=/home/ubuntu/codyssey-m3-final/backend
 # LLM_API_KEY 는 이 파일(서버에만 있음)에 둔다. 없으면 샘플 모드
 EnvironmentFile=-/home/ubuntu/codyssey-m3-final/backend/.env

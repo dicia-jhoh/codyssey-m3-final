@@ -43,12 +43,23 @@ backend/.venv/bin/pip install -q -r backend/requirements.txt
 if ! git diff --quiet "$deploy_before_pull" HEAD -- data/legal/articles.jsonl; then
     (cd backend && .venv/bin/python -m scripts.load_legal_articles)
 fi
+sudo cp deploy/ttobak.service /etc/systemd/system/
+sudo systemctl daemon-reload
 sudo systemctl restart ttobak
 bash deploy/smoke.sh http://localhost:8037  # 화면·API·빈 업로드 확인
 ```
 
 다른 컴퓨터에서는 `bash deploy/smoke.sh http://129.225.184.224:8037`로 확인한다.
 스크립트는 `curl`·`python3`를 사용하며 하나라도 실패하면 종료 코드 1을 낸다.
+
+### 서비스 보호 설정
+
+서비스는 권한 상승을 막고 임시 폴더를 분리하며, 시스템과 홈 폴더를 읽기 전용으로 연다.
+쓰기 허용 경로는 공유 DB·법령 Chroma가 있는 `/home/ubuntu/codyssey-m3-final/data` 하나다.
+서비스 시작 전 이 폴더가 있고 `ubuntu`가 쓸 수 있는지 확인한다.
+서비스 파일을 바꾼 뒤에는 위의 복사·`daemon-reload`·재시작 순서로 반영한다.
+리뷰 시 Linux에서 `systemd-analyze verify deploy/ttobak.service`로 확인하고,
+서버 적용 후에는 `systemd-analyze security ttobak.service`로 보호 설정을 확인한다.
 
 ## 진짜 해독 켜기
 
