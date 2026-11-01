@@ -1,4 +1,4 @@
-# 법령 조문 — 담당: 김기훈 (지금은 검증된 조문 6건)
+# 법령 조문 — 담당: 김기훈 (지금은 검증된 조문 7건)
 
 `rag.py`가 근거로 인용하는 법령 원문. `articles.jsonl`에 한 줄 한 조문씩 적고,
 `backend/scripts/load_legal_articles.py`로 Chroma에 넣는다(Chroma DB 자체는
