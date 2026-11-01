@@ -366,6 +366,7 @@ function show(decoded) {
   $("marks").replaceChildren(...decoded.marks.map(markBox));
   renderTodos(decoded);
   $("basis").replaceChildren(...basisItems(decoded.basis));
+  showReply(decoded);
   $("shareResult").textContent = "";
   $("shareBtn").hidden = !!sharedId; // 손주 모드 화면에선 또 보내기 버튼을 안 띄운다
   $("result").hidden = false;
@@ -485,6 +486,28 @@ function doneButton(li, decoded, key) {
   });
   return button;
 }
+
+// 과태료 고지서의 의견 제출서 초안 — 의견 제출 기한 안에 내면 20%까지 줄어든다(시행령 제5조)
+function showReply(decoded) {
+  $("replySection").hidden = !decoded.reply_draft;
+  $("replyDraft").textContent = decoded.reply_draft || "";
+  $("replyNote").textContent =
+    decoded.doc_type === "과태료"
+      ? "의견 제출 기한 안에 스스로 내면 과태료를 20%까지 줄일 수 있어요. 사정이 있으면 아래 글을 고쳐 내세요."
+      : "";
+  $("replyResult").textContent = "";
+}
+
+$("copyReplyBtn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("replyDraft").textContent);
+    $("replyResult").textContent = "초안을 복사했어요. 빈칸을 채워 내세요.";
+  } catch {
+    // http 주소에선 클립보드가 막혀 있다 — 글을 골라 두면 길게 눌러 복사할 수 있다
+    getSelection().selectAllChildren($("replyDraft"));
+    $("replyResult").textContent = "글을 골라 두었어요. 길게 눌러 복사하세요.";
+  }
+});
 
 function basisItems(basis) {
   if (!basis.length) return [emptyListItem("이 고지서에서 관련 법 조항은 찾지 못했어요.")];

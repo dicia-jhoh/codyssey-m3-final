@@ -40,7 +40,7 @@ class Basis(BaseModel):
 class Decoded(BaseModel):
     """POST /decode 응답 전체."""
 
-    doc_type: Literal["고지서", "가정통신문", "안내문", "신청서", "기타"]
+    doc_type: Literal["고지서", "과태료", "가정통신문", "안내문", "신청서", "기타"]
     title: str
     plain: list[str]  # 쉬운 말 요약, 3줄 이내
     marks: list[Mark]

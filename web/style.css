@@ -58,3 +58,6 @@ blockquote { margin: 4px 0 12px; padding-left: 10px; border-left: 3px solid #ccc
 .share:focus-visible { outline: 3px solid var(--deadline); outline-offset: 2px; }
 .share-result { margin-top: 8px; }
 .share-result input { width: 100%; box-sizing: border-box; padding: 10px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; }
+
+.reply-note { font-weight: 700; color: var(--deadline); }
+.reply-draft { margin: 0; padding: 14px; white-space: pre-wrap; font: inherit; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); }
