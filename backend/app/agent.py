@@ -6,6 +6,7 @@
 """
 
 import os
+import re
 
 from . import extract, rag, reply
 from .redact import redact
@@ -18,18 +19,20 @@ PLAIN_MAX_LINES = 3  # 쉬운 말 풀이는 근거 세 개까지 — 어르신 �
 PAY_HOW = "은행 또는 앱 납부"
 
 
-# 앞에 있는 낱말이 이긴다 — 과태료 고지서에도 「납부」가 있어서 과태료를 먼저 본다
-_KIND_WORDS = [
-    ("과태료", "과태료"),
-    ("납부", "고지서"),
-    ("가정통신", "가정통신문"),
-    ("신청", "신청서"),
-]
+# 과태료를 매기는 문서의 표지 — 「…하면 과태료가 부과됩니다」 같은 안내 한 줄과 가른다
+_FINE_NOTICE_RE = re.compile(r"과태료\s*(?:부과\s*)?(?:고지|사전\s*통지)|과태료\s*금액|의견\s*제출")
+# 앞에 있는 낱말이 이긴다
+_KIND_WORDS = [("납부", "고지서"), ("가정통신", "가정통신문"), ("신청", "신청서")]
 REPLY_KINDS = ("신청서", "과태료")  # 보낼 글이 필요한 문서
 
 
 def classify(text: str) -> str:
-    """④ 문서 종류 판별 — 고지서에 찍히는 낱말로 고른다."""
+    """④ 문서 종류 판별 — 고지서에 찍히는 낱말로 고른다.
+
+    과태료 고지서에도 「납부」가 있어서 과태료를 먼저 본다.
+    """
+    if "과태료" in text and _FINE_NOTICE_RE.search(text):
+        return "과태료"
     for word, kind in _KIND_WORDS:
         if word in text:
             return kind

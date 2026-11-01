@@ -132,3 +132,11 @@ def test_done_keys_per_share_are_capped(monkeypatch):
     share.mark_done(share_id, "b", done=True)
     with pytest.raises(ValueError):
         share.mark_done(share_id, "c", done=True)
+
+
+def test_done_key_already_recorded_is_accepted_at_the_cap(monkeypatch):
+    """한도가 찬 공유에 이미 적힌 키를 다시 보내도 413 이 아니다(공유할 때 다시 보낸다)."""
+    monkeypatch.setattr(share, "MAX_DONE_PER_SHARE", 1)
+    share_id = create_share(_decoded())
+    share.mark_done(share_id, "a", done=True)
+    assert share.mark_done(share_id, "a", done=True) == ["a"]
