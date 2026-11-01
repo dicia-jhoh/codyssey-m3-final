@@ -12,7 +12,7 @@ AI 고지서 해독기 — 고지서를 찍으면 원본 위에 낼 돈·기한�
 [![서비스 열기](https://img.shields.io/badge/서비스_열기-129.225.184.224:8037/app-8052FF?style=for-the-badge)](http://129.225.184.224:8037/app/)
 [![팀 홈페이지](https://img.shields.io/badge/팀_홈페이지-또박또박-111111?style=for-the-badge)](http://129.225.184.224:8037/)
 
-![tests](https://img.shields.io/badge/백엔드_테스트-196_passed-30a46c)
+![tests](https://img.shields.io/badge/백엔드_테스트-200_passed-30a46c)
 ![accuracy](https://img.shields.io/badge/추출_정확도-91.2%25_(합성_30장)-8052FF)
 ![python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![fastapi](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
@@ -272,7 +272,7 @@ PM(오주현)이 코드 리뷰에서 짚어 이슈로 올려줬고, PR #15에서
    python3 -m venv .venv
    source .venv/bin/activate          # Windows: .venv\Scripts\activate
    pip install -r requirements.txt
-   pytest                             # 전부 passed 면 성공(2026-11-01 기준 196개)
+   pytest                             # 전부 passed 면 성공(2026-11-01 기준 200개)
    ```
 3. 백엔드 서버를 띄워요. 켜 두면 <http://localhost:8000/docs>에서 API를 눌러 볼 수 있어요.
    ```bash
