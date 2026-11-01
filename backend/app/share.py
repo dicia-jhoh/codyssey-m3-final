@@ -6,13 +6,13 @@
 
 from __future__ import annotations
 
-from contextlib import closing
 import os
-from pathlib import Path
 import secrets
 import sqlite3
 import threading
 import time
+from contextlib import closing
+from pathlib import Path
 
 from .schema import Decoded
 
@@ -30,7 +30,11 @@ def _connect() -> sqlite3.Connection:
     db = sqlite3.connect(path, check_same_thread=False)
     # 해독 결과(금액·기한)가 담긴다 — 서버의 다른 계정이 못 읽게(OCR). 이미 있는 파일도 고친다
     os.chmod(path, 0o600)
-    db.execute("CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, body TEXT NOT NULL, expires_at REAL NOT NULL, created_at REAL NOT NULL)")
+    db.execute(
+        "CREATE TABLE IF NOT EXISTS shares ("
+        "id TEXT PRIMARY KEY, body TEXT NOT NULL, "
+        "expires_at REAL NOT NULL, created_at REAL NOT NULL)"
+    )
     # 저장·읽기마다 만료분을 지운다(expires_at < 지금) — 색인이 있어야 표를 다 훑지 않는다
     db.execute("CREATE INDEX IF NOT EXISTS shares_expires_at ON shares (expires_at)")
     return db
@@ -42,9 +46,15 @@ def create_share(decoded: Decoded, *, ttl_seconds: float = DEFAULT_TTL_SECONDS) 
     now = time.time()
     with _lock, closing(_connect()) as db, db:
         db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
-        db.execute("INSERT INTO shares VALUES (?, ?, ?, ?)",
-                   (share_id, decoded.model_dump_json(), now + ttl_seconds, now))
-        db.execute("DELETE FROM shares WHERE id IN (SELECT id FROM shares ORDER BY created_at DESC, rowid DESC LIMIT -1 OFFSET ?)", (MAX_SHARES,))
+        db.execute(
+            "INSERT INTO shares VALUES (?, ?, ?, ?)",
+            (share_id, decoded.model_dump_json(), now + ttl_seconds, now),
+        )
+        db.execute(
+            "DELETE FROM shares WHERE id IN ("
+            "SELECT id FROM shares ORDER BY created_at DESC, rowid DESC LIMIT -1 OFFSET ?)",
+            (MAX_SHARES,),
+        )
     return share_id
 
 

@@ -35,9 +35,7 @@ def test_decode_upload_validation(monkeypatch, size, content_type, status, detai
     monkeypatch.setattr(UploadFile, "read", tracked_read)
     monkeypatch.setattr(main, "decode", fake_decode)
     with TestClient(main.app) as client:
-        response = client.post(
-            "/decode", files={"file": ("photo.jpg", b"x" * size, content_type)}
-        )
+        response = client.post("/decode", files={"file": ("photo.jpg", b"x" * size, content_type)})
 
     assert response.status_code == status
     assert read_sizes == ([main.MAX_BYTES + 1] if content_type == "image/jpeg" else [])
@@ -63,10 +61,18 @@ def test_oversized_header_rejected_without_reading_body(monkeypatch):
 
         monkeypatch.setattr(main, "decode", decode)
         scope = {
-            "type": "http", "http_version": "1.1", "method": "POST", "path": "/decode",
-            "scheme": "http", "query_string": b"", "root_path": "",
-            "headers": [(b"content-length", str(main.MAX_BYTES + main.MULTIPART_OVERHEAD + 1).encode())],
-            "server": ("test", 80), "client": ("test", 123),
+            "type": "http",
+            "http_version": "1.1",
+            "method": "POST",
+            "path": "/decode",
+            "scheme": "http",
+            "query_string": b"",
+            "root_path": "",
+            "headers": [
+                (b"content-length", str(main.MAX_BYTES + main.MULTIPART_OVERHEAD + 1).encode())
+            ],
+            "server": ("test", 80),
+            "client": ("test", 123),
         }
         await main.app(scope, receive, send)
         assert sent[0]["status"] == 413
@@ -79,7 +85,9 @@ def test_acceptable_headers_still_decode(monkeypatch, length):
     monkeypatch.setattr(main, "decode", lambda image: SAMPLE)
     headers = {"content-length": length} if length is not None else {}
     with TestClient(main.app) as client:
-        request = client.build_request("POST", "/decode", files={"file": ("a.jpg", b"ok", "image/jpeg")})
+        request = client.build_request(
+            "POST", "/decode", files={"file": ("a.jpg", b"ok", "image/jpeg")}
+        )
         request.headers.pop("content-length", None)
         request.headers.update(headers)
         response = client.send(request)
@@ -88,7 +96,9 @@ def test_acceptable_headers_still_decode(monkeypatch, length):
 
 def test_other_routes_ignore_decode_upload_limit():
     with TestClient(main.app) as client:
-        response = client.post("/share", json=SAMPLE.model_dump(), headers={"content-length": str(main.MAX_BYTES * 2)})
+        response = client.post(
+            "/share", json=SAMPLE.model_dump(), headers={"content-length": str(main.MAX_BYTES * 2)}
+        )
     assert response.status_code == 200
 
 
@@ -113,15 +123,23 @@ def test_chunked_upload_without_length_stops_at_limit(monkeypatch):
         monkeypatch.setattr(main, "decode", lambda image: pytest.fail("decode must not run"))
         boundary = b"b"
         head = (
-            b"--b\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.jpg\"\r\n"
+            b'--b\r\nContent-Disposition: form-data; name="file"; filename="a.jpg"\r\n'
             b"Content-Type: image/jpeg\r\n\r\n"
         )
         scope = {
-            "type": "http", "http_version": "1.1", "method": "POST", "path": "/decode",
-            "scheme": "http", "query_string": b"", "root_path": "",
-            "headers": [(b"content-type", b"multipart/form-data; boundary=" + boundary),
-                        (b"transfer-encoding", b"chunked")],
-            "server": ("test", 80), "client": ("test", 123),
+            "type": "http",
+            "http_version": "1.1",
+            "method": "POST",
+            "path": "/decode",
+            "scheme": "http",
+            "query_string": b"",
+            "root_path": "",
+            "headers": [
+                (b"content-type", b"multipart/form-data; boundary=" + boundary),
+                (b"transfer-encoding", b"chunked"),
+            ],
+            "server": ("test", 80),
+            "client": ("test", 123),
         }
         await main.app(scope, receive, send)
         assert sent[0]["status"] == 413

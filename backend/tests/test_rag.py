@@ -62,9 +62,7 @@ def test_find_basis_returns_empty_when_collection_empty():
 
 
 def test_find_basis_returns_empty_when_no_citation_in_text():
-    rag.add_article(
-        law_name="국민건강보험법", article_no="80", quote="원문", claim="풀이"
-    )
+    rag.add_article(law_name="국민건강보험법", article_no="80", quote="원문", claim="풀이")
     assert rag.find_basis("인용 없는 문장") == []
 
 

@@ -9,9 +9,17 @@ from app.schema import Decoded
 
 @pytest.fixture
 def decode(monkeypatch):
-    fake = Mock(return_value=Decoded(
-        doc_type="고지서", title="테스트", plain=[], marks=[], todos=[], basis=[], sample=True,
-    ))
+    fake = Mock(
+        return_value=Decoded(
+            doc_type="고지서",
+            title="테스트",
+            plain=[],
+            marks=[],
+            todos=[],
+            basis=[],
+            sample=True,
+        )
+    )
     monkeypatch.setattr(main, "decode", fake)
     return fake
 

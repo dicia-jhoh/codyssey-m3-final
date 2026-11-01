@@ -68,7 +68,9 @@ class _FakeAnthropicClient:
 
 def test_call_vision_sends_current_model_and_detected_media_type(monkeypatch):
     calls: list[dict] = []
-    monkeypatch.setattr(extract, "Anthropic", lambda **kwargs: _FakeAnthropicClient(calls, **kwargs))
+    monkeypatch.setattr(
+        extract, "Anthropic", lambda **kwargs: _FakeAnthropicClient(calls, **kwargs)
+    )
 
     extract._call_vision(b"\x89PNG\r\n\x1a\n...", "dummy-key")
 
@@ -83,14 +85,24 @@ class _FakeGeminiResponse:
         pass
 
     def json(self) -> dict:
-        return {"candidates": [{"content": {"parts": [{"text": '{"document_text": "g", "items": []}'}]}}]}
+        return {
+            "candidates": [
+                {"content": {"parts": [{"text": '{"document_text": "g", "items": []}'}]}}
+            ]
+        }
 
 
 @pytest.mark.parametrize("key", ["AIzaDummy", "AQ.Dummy"])  # 옛 키·새 키 모양 둘 다
 def test_call_vision_sends_gemini_key_to_gemini_in_header(monkeypatch, key):
     calls: list[dict] = []
-    monkeypatch.setattr(extract, "Anthropic", lambda **kwargs: pytest.fail("Gemini 키가 Claude 로 갔다"))
-    monkeypatch.setattr(extract.httpx, "post", lambda url, **kw: calls.append({"url": url, **kw}) or _FakeGeminiResponse())
+    monkeypatch.setattr(
+        extract, "Anthropic", lambda **kwargs: pytest.fail("Gemini 키가 Claude 로 갔다")
+    )
+    monkeypatch.setattr(
+        extract.httpx,
+        "post",
+        lambda url, **kw: calls.append({"url": url, **kw}) or _FakeGeminiResponse(),
+    )
 
     raw = extract._call_vision(b"\x89PNG\r\n\x1a\n...", key)
 
@@ -123,7 +135,9 @@ def test_parse_json_strips_code_fence():
 def test_double_check_keeps_money_matching_document_text():
     marks = extract._double_check(
         document_text="납부금액: 금 48,200원",
-        items=[{"kind": "money", "text": "금 48,200원", "value": "48200", "bbox": [0, 0, 0.1, 0.1]}],
+        items=[
+            {"kind": "money", "text": "금 48,200원", "value": "48200", "bbox": [0, 0, 0.1, 0.1]}
+        ],
     )
     assert marks == [Mark(kind="money", text="금 48,200원", value="48200", bbox=[0, 0, 0.1, 0.1])]
 
@@ -131,7 +145,9 @@ def test_double_check_keeps_money_matching_document_text():
 def test_double_check_drops_money_not_found_in_document_text():
     marks = extract._double_check(
         document_text="납부금액: 금 48,200원",
-        items=[{"kind": "money", "text": "금 99,999원", "value": "99999", "bbox": [0, 0, 0.1, 0.1]}],
+        items=[
+            {"kind": "money", "text": "금 99,999원", "value": "99999", "bbox": [0, 0, 0.1, 0.1]}
+        ],
     )
     assert marks == []
 
@@ -139,7 +155,14 @@ def test_double_check_drops_money_not_found_in_document_text():
 def test_double_check_keeps_deadline_matching_document_text():
     marks = extract._double_check(
         document_text="납부기한: 2026.10.31까지",
-        items=[{"kind": "deadline", "text": "2026.10.31까지", "value": "2026-10-31", "bbox": [0, 0, 0.1, 0.1]}],
+        items=[
+            {
+                "kind": "deadline",
+                "text": "2026.10.31까지",
+                "value": "2026-10-31",
+                "bbox": [0, 0, 0.1, 0.1],
+            }
+        ],
     )
     assert marks == [
         Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1])
@@ -150,7 +173,14 @@ def test_double_check_keeps_deadline_in_month_day_format():
     # 연도 없이 "10월 31일"만 적힌 공문이 흔함 — fallback_year로 교차 대조되어야 한다.
     marks = extract._double_check(
         document_text="납부기한: 10월 31일까지",
-        items=[{"kind": "deadline", "text": "10월 31일까지", "value": "10월 31일", "bbox": [0, 0, 0.1, 0.1]}],
+        items=[
+            {
+                "kind": "deadline",
+                "text": "10월 31일까지",
+                "value": "10월 31일",
+                "bbox": [0, 0, 0.1, 0.1],
+            }
+        ],
         fallback_year=2026,
     )
     assert marks == [
@@ -180,12 +210,14 @@ def test_resolve_month_day_keeps_year_within_threshold():
 
 
 def test_resolve_month_day_rolls_to_next_year_when_far_past():
-    # 12월에 받은 고지서의 "1월 10일까지"는 fallback_year(올해) 기준 이미 지난 날짜가 된다 — 다음 해로 올려야 함.
+    # 12월에 받은 고지서의 "1월 10일까지"는 fallback_year(올해) 기준 이미 지난 날짜가 된다
+    # — 다음 해로 올려야 함.
     assert extract._resolve_month_day(1, 10, 2026, today=date(2026, 12, 20)) == "2027-01-10"
 
 
 def test_resolve_month_day_keeps_explicit_other_year():
-    # fallback_year 를 올해가 아닌 해로 넘기면 오늘과 비교하지 않는다 — 고정 연도 테스트가 해를 넘겨도 그대로.
+    # fallback_year 를 올해가 아닌 해로 넘기면 오늘과 비교하지 않는다
+    # — 고정 연도 테스트가 해를 넘겨도 그대로.
     assert extract._resolve_month_day(10, 31, 2026, today=date(2027, 1, 5)) == "2026-10-31"
 
 
@@ -196,7 +228,14 @@ def test_resolve_month_day_returns_none_for_invalid_calendar_date():
 def test_double_check_ignores_calendar_invalid_date():
     marks = extract._double_check(
         document_text="납부기한: 13월 31일까지",
-        items=[{"kind": "deadline", "text": "13월 31일까지", "value": "13월 31일", "bbox": [0, 0, 0.1, 0.1]}],
+        items=[
+            {
+                "kind": "deadline",
+                "text": "13월 31일까지",
+                "value": "13월 31일",
+                "bbox": [0, 0, 0.1, 0.1],
+            }
+        ],
         fallback_year=2026,
     )
     assert marks == []
@@ -205,7 +244,14 @@ def test_double_check_ignores_calendar_invalid_date():
 def test_double_check_drops_deadline_not_found_in_document_text():
     marks = extract._double_check(
         document_text="아무 날짜도 없음",
-        items=[{"kind": "deadline", "text": "2026.10.31까지", "value": "2026-10-31", "bbox": [0, 0, 0.1, 0.1]}],
+        items=[
+            {
+                "kind": "deadline",
+                "text": "2026.10.31까지",
+                "value": "2026-10-31",
+                "bbox": [0, 0, 0.1, 0.1],
+            }
+        ],
     )
     assert marks == []
 
@@ -306,7 +352,12 @@ def test_extract_wires_call_vision_and_double_check(monkeypatch):
         return {
             "document_text": "납부금액: 금 48,200원",
             "items": [
-                {"kind": "money", "text": "금 48,200원", "value": "48200", "bbox": [0.1, 0.1, 0.2, 0.05]},
+                {
+                    "kind": "money",
+                    "text": "금 48,200원",
+                    "value": "48200",
+                    "bbox": [0.1, 0.1, 0.2, 0.05],
+                },
             ],
         }
 
@@ -322,35 +373,65 @@ def test_box_2d_becomes_ratio_bbox():
     """box_2d [위, 왼쪽, 아래, 오른쪽] 0~1000 → 화면 bbox [x, y, w, h] 0~1."""
     marks = extract._double_check(
         document_text="납부금액: 금 48,200원",
-        items=[{"kind": "money", "text": "48,200원", "value": "48200", "box_2d": [300, 500, 350, 750]}],
+        items=[
+            {"kind": "money", "text": "48,200원", "value": "48200", "box_2d": [300, 500, 350, 750]}
+        ],
     )
     assert marks[0].bbox == pytest.approx([0.5, 0.3, 0.25, 0.05])
 
 
 def test_legacy_bbox_in_thousandths_is_scaled():
-    """0~1 을 시켜도 Gemini 는 0~1000 을 준다(10-23 실측 [801, 345, 155, 22]) — 사진 밖에 그리지 않는다."""
+    """0~1 을 시켜도 Gemini 는 0~1000 을 준다(10-23 실측 [801, 345, 155, 22]).
+
+    사진 밖에 그리지 않는다.
+    """
     marks = extract._double_check(
         document_text="2023. 11. 30 까지",
-        items=[{"kind": "deadline", "text": "2023. 11. 30 까지", "value": "2023-11-30", "bbox": [801, 345, 155, 22]}],
+        items=[
+            {
+                "kind": "deadline",
+                "text": "2023. 11. 30 까지",
+                "value": "2023-11-30",
+                "bbox": [801, 345, 155, 22],
+            }
+        ],
     )
     assert marks[0].bbox == pytest.approx([0.801, 0.345, 0.155, 0.022])
     assert all(0 <= v <= 1 for v in marks[0].bbox)
 
 
-@pytest.mark.parametrize("item", [{"box_2d": [500, 500, 500, 600]}, {"box_2d": [0, 900, 100, 800]}, {"bbox": [0.2, 0.2, 0, 0.1]}])
+@pytest.mark.parametrize(
+    "item",
+    [
+        {"box_2d": [500, 500, 500, 600]},
+        {"box_2d": [0, 900, 100, 800]},
+        {"bbox": [0.2, 0.2, 0, 0.1]},
+    ],
+)
 def test_empty_or_inverted_box_is_dropped(item):
-    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", **item}])
+    marks = extract._double_check(
+        document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", **item}]
+    )
     assert marks == []
 
 
-@pytest.mark.parametrize(("bbox", "expected"), [([-0.1, 0.2, 0.2, 0.1], [0.0, 0.2, 0.1, 0.1]), ([0.9, 0.9, 0.3, 0.3], [0.9, 0.9, 0.1, 0.1])])
+@pytest.mark.parametrize(
+    ("bbox", "expected"),
+    [([-0.1, 0.2, 0.2, 0.1], [0.0, 0.2, 0.1, 0.1]), ([0.9, 0.9, 0.3, 0.3], [0.9, 0.9, 0.1, 0.1])],
+)
 def test_legacy_bbox_is_clipped_not_shifted(bbox, expected):
-    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": bbox}])
+    marks = extract._double_check(
+        document_text="신분증",
+        items=[{"kind": "document", "text": "신분증", "value": "", "bbox": bbox}],
+    )
     assert marks[0].bbox == pytest.approx(expected)
 
 
 def test_legacy_bbox_wholly_outside_is_dropped():
-    marks = extract._double_check(document_text="신분증", items=[{"kind": "document", "text": "신분증", "value": "", "bbox": [-0.5, 0.2, 0.2, 0.1]}])
+    marks = extract._double_check(
+        document_text="신분증",
+        items=[{"kind": "document", "text": "신분증", "value": "", "bbox": [-0.5, 0.2, 0.2, 0.1]}],
+    )
     assert marks == []
 
 
@@ -367,11 +448,16 @@ def test_plain_digits_in_document_are_not_amounts():
     """납세번호 같은 쉼표 없는 맨 숫자와 우연히 같아도 금액으로 인정하지 않는다."""
     marks = extract._double_check(
         document_text="기관번호 2307207",
-        items=[{"kind": "money", "text": "2307207", "value": "2307207", "bbox": [0.1, 0.1, 0.1, 0.1]}],
+        items=[
+            {"kind": "money", "text": "2307207", "value": "2307207", "bbox": [0.1, 0.1, 0.1, 0.1]}
+        ],
     )
     assert marks == []
 
 
 def test_superscript_value_does_not_crash():
-    marks = extract._double_check(document_text="금 2원", items=[{"kind": "money", "text": "²", "value": "²", "bbox": [0.1, 0.1, 0.1, 0.1]}])
+    marks = extract._double_check(
+        document_text="금 2원",
+        items=[{"kind": "money", "text": "²", "value": "²", "bbox": [0.1, 0.1, 0.1, 0.1]}],
+    )
     assert marks == []

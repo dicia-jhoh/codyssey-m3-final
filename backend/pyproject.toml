@@ -1,0 +1,15 @@
+# 백엔드 게이트 — `pytest` 와 `ruff check .`·`ruff format --check .` 를 backend/ 에서 친다
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI 는 매개변수 기본값 File()·Form() 으로 요청 모양을 선언한다
+extend-immutable-calls = ["fastapi.File", "fastapi.Form"]

@@ -51,7 +51,9 @@ def test_load_skips_blank_lines(tmp_path: Path):
 
 def test_load_raises_on_missing_required_field(tmp_path: Path):
     articles_path = tmp_path / "articles.jsonl"
-    _write_jsonl(articles_path, [{"law_name": "지방세법", "article_no": "15", "quote": "q"}])  # claim 없음
+    _write_jsonl(
+        articles_path, [{"law_name": "지방세법", "article_no": "15", "quote": "q"}]
+    )  # claim 없음
 
     with pytest.raises(ValueError, match="claim"):
         load(articles_path)
@@ -61,7 +63,9 @@ def test_real_articles_file_is_well_formed_and_loadable():
     """data/legal/articles.jsonl(실제 커밋되는 데이터)이 깨진 줄 없이 전부 로드되는지
     확인 — 필수 필드 누락이나 JSON 문법 오류가 섞여 들어가는 걸 CI 수준에서 막는다."""
     count = load(_DEFAULT_ARTICLES)
-    assert count >= 4  # 건강보험법80·지방세기본법55·국민연금법97·질서위반행위규제법24 — 더 늘면 이 숫자도 올릴 것
+    assert (
+        count >= 4
+    )  # 건강보험법80·지방세기본법55·국민연금법97·질서위반행위규제법24 — 더 늘면 이 숫자도 올릴 것
 
     assert rag.find_basis("국민건강보험법 제80조에 따라")
     assert rag.find_basis("지방세기본법 제55조에 따라")

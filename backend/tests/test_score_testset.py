@@ -3,7 +3,9 @@ from pathlib import Path
 from app.schema import Decoded, Mark, Todo
 from scripts.score_testset import _fuzzy_match, main, score_one
 
-_EXAMPLE_LABELS = Path(__file__).resolve().parents[2] / "data" / "testset" / "example" / "labels.jsonl"
+_EXAMPLE_LABELS = (
+    Path(__file__).resolve().parents[2] / "data" / "testset" / "example" / "labels.jsonl"
+)
 
 
 def _decoded(**marks_and_todos) -> Decoded:
@@ -112,9 +114,7 @@ def test_score_one_matches_todo_by_due_and_amount_not_title():
     # #17 이후 제목이 "{doc_type} 돈 내기"(#66)로 바뀌어서 라벨 예시의 "건강보험료 내기"와
     # 절대 안 맞는다 — 그래서 제목이 아니라 (기한, 금액) 쌍으로 비교한다(이슈 #23-3).
     label = {"image": "001.jpg", "todos": [{"due": "2026-10-31", "amount": 48200}]}
-    result = _decoded(
-        todos=[Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="")]
-    )
+    result = _decoded(todos=[Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="")])
 
     score = score_one(label, result)
 
@@ -137,7 +137,12 @@ def test_main_runs_end_to_end_against_committed_example_image(monkeypatch, capsy
             sample=False,
             marks=[
                 Mark(kind="money", text="금 48,200원", value="48200", bbox=[0, 0, 0.1, 0.1]),
-                Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0, 0, 0.1, 0.1]),
+                Mark(
+                    kind="deadline",
+                    text="2026.10.31까지",
+                    value="2026-10-31",
+                    bbox=[0, 0, 0.1, 0.1],
+                ),
                 Mark(kind="document", text="구비서류: 신분증", value="", bbox=[0, 0, 0.1, 0.1]),
             ],
             todos=[Todo(title="x", due="2026-10-31", amount=48200, how="")],
