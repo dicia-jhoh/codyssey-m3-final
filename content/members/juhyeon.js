@@ -6,7 +6,8 @@ window.MEMBERS.juhyeon = {
   role: "PM · AI Agent", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
     "일정·이슈 관리, PR 리뷰와 모듈 통합",
-    "Agent 파이프라인 — 판별 → 추출 → 근거 → 답장 판단 (backend/app/agent.py)",
+    "Agent 파이프라인 — 추출 → 가림 → 근거 → 판별 → 할 일 (backend/app/agent.py)",
+    "과태료 답장 초안·가족과 함께 보는 「다 했어요」·카카오톡 알림 미리보기",
     "프롬프트 JSON 스키마 (backend/app/schema.py)",
   ],
   prs: [
