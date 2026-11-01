@@ -5,10 +5,10 @@ window.MEMBERS.gihoon = {
   github: "duplgabszin", // GitHub 아이디
   role: "RAG 데이터 · 품질", // 예: "PM / Backend", "Frontend", "AI / Data"
   work: [
-    "법령·정부24 문서 수집과 근거 검색 (backend/app/rag.py)",
+    "법 조문 모으기·법제처 원문 대조와 근거 검색 (backend/app/rag.py · lawapi.py)",
     "개인정보 가림 — 전화번호도 가리기 (backend/app/redact.py)",
-    "고지서 30장 테스트셋 라벨링 (data/testset/)",
-    "정확도 측정·사용자 설문 분석",
+    "테스트셋 첫 5장 정답 (data/testset/labels.jsonl)",
+    "같은 조문이 두 번 적재되지 않게 막기 (backend/scripts/load_legal_articles.py)",
   ],
   prs: [
     "https://github.com/dicia-jhoh/codyssey-m3-final/pull/117",
