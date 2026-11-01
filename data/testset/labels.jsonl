@@ -1,5 +1,5 @@
-{"image": "images/001.jpg", "doc_type": "고지서", "money": [👤48200], "deadlines": ["👤2026-10-31"], "documents": [], "todos": [{"due": "👤2026-10-31", "amount": 👤48200}]}
-{"image": "images/002.jpg", "doc_type": "고지서", "money": [👤18610], "deadlines": ["👤2026-11-02"], "documents": [], "todos": [{"due": "👤2026-11-02", "amount": 👤18610}]}
-{"image": "images/003.jpg", "doc_type": "고지서", "money": [👤12870], "deadlines": ["👤2026-11-02"], "documents": [], "todos": [{"due": "👤2026-11-02", "amount": 👤12870}]}
-{"image": "images/004.jpg", "doc_type": "가정통신문", "money": [], "deadlines": ["👤2026-10-18"], "documents": ["👤설문조사"], "todos": [{"due": "👤2026-10-18", "amount": null}]}
-{"image": "images/005.jpg", "doc_type": "안내문", "money": [], "deadlines": ["👤2024-08-26"], "documents": ["👤주민등록 사실조사"], "todos": [{"due": "👤2024-08-26", "amount": null}]}
+{"image": "images/001.jpg", "doc_type": "고지서", "money": [48200], "deadlines": ["2026-10-31"], "documents": [], "todos": [{"due": "2026-10-31", "amount": 48200}]}
+{"image": "images/002.jpg", "doc_type": "고지서", "money": [18610], "deadlines": ["2026-11-02"], "documents": [], "todos": [{"due": "2026-11-02", "amount": 18610}]}
+{"image": "images/003.jpg", "doc_type": "고지서", "money": [12870], "deadlines": ["2026-11-02"], "documents": [], "todos": [{"due": "2026-11-02", "amount": 12870}]}
+{"image": "images/004.jpg", "doc_type": "가정통신문", "money": [], "deadlines": ["2026-10-18"], "documents": ["설문조사"], "todos": [{"due": "2026-10-18", "amount": null}]}
+{"image": "images/005.jpg", "doc_type": "안내문", "money": [], "deadlines": ["2024-08-26"], "documents": ["주민등록 사실조사"], "todos": [{"due": "2024-08-26", "amount": null}]}
