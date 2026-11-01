@@ -1,3 +1,5 @@
+import pytest
+
 from app.agent import _how, _preparation_note, _todos_from_marks, classify, decode
 from app.schema import Mark, Todo
 
@@ -143,3 +145,63 @@ def test_decode_builds_todos_from_extracted_marks(monkeypatch):
     assert len(result.todos) == 1
     assert result.todos[0].amount == 48200
     assert result.todos[0].due == "2026-10-31"
+
+
+def test_classify_fine_before_bill_because_fines_also_say_pay():
+    assert classify("과태료 부과 사전통지서\n납부기한: 2026.11.20") == "과태료"
+
+
+_FINE_TEXT = "과태료 부과 사전통지서\n과태료: 40,000원\n의견 제출 기한: 2026.11.20"
+
+
+def _fine_marks(monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "dummy")
+    monkeypatch.setattr("app.agent.extract.extract", lambda image, api_key: (_FINE_TEXT, []))
+
+
+def test_fine_notice_gets_reply_draft_and_reduction_basis(monkeypatch):
+    from app import rag, reply
+    from scripts.load_legal_articles import load
+
+    load()  # 적재된 조문(의견 제출·감경 포함)을 격리된 Chroma 에
+    _fine_marks(monkeypatch)
+    sent = []
+    monkeypatch.setattr(reply, "_ask", lambda text, key: sent.append(text) or "의견 제출서 초안")
+
+    result = decode(b"fake")
+
+    assert result.doc_type == "과태료" and result.reply_needed
+    assert result.reply_draft == "의견 제출서 초안"
+    assert sent == [_FINE_TEXT]  # LLM 에는 가린 글자만 간다
+    laws = [b.law for b in result.basis]
+    assert laws == [
+        "질서위반행위규제법 제16조",
+        "질서위반행위규제법 제18조",
+        "질서위반행위규제법 시행령 제5조",
+    ]
+    assert "100분의 20" in result.basis[2].quote
+    assert rag.article("없는법", "1") is None
+
+
+def test_reply_draft_falls_back_to_blank_form_when_llm_fails(monkeypatch):
+    from app import reply
+
+    _fine_marks(monkeypatch)
+
+    def broken(text, key):
+        raise RuntimeError("down")
+
+    monkeypatch.setattr(reply, "_ask", broken)
+    assert decode(b"fake").reply_draft == reply.TEMPLATE
+
+
+def test_bill_gets_no_reply_draft(monkeypatch):
+    from app import reply
+
+    monkeypatch.setenv("LLM_API_KEY", "dummy")
+    monkeypatch.setattr(
+        "app.agent.extract.extract", lambda image, api_key: ("납부기한 10월 31일", [])
+    )
+    monkeypatch.setattr(reply, "_ask", lambda text, key: pytest.fail("고지서엔 초안을 쓰지 않는다"))
+    result = decode(b"fake")
+    assert result.reply_draft == "" and not result.reply_needed

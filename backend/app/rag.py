@@ -99,6 +99,29 @@ def _citations(text: str) -> list[tuple[str, str]]:
     return list(dict.fromkeys(found))
 
 
+def article(law_name: str, article_no: str) -> Basis | None:
+    """적재된 조문 하나를 근거로 — 없으면 None(근거를 지어내지 않는다).
+
+    find_basis 와 같은 까닭으로 Chroma 실패는 삼킨다 — 근거 하나 때문에 해독이 500 이 되지 않게.
+    """
+    try:
+        found = _lookup(_collection(), law_name, article_no)
+    except Exception:
+        log.exception("조문 찾기 실패 — 근거 없이 넘어감")
+        return None
+    return found[0] if found else None
+
+
+def _lookup(collection, law_name: str, article_no: str) -> list[Basis]:
+    hit = collection.get(
+        where={"$and": [{"law_name": {"$eq": law_name}}, {"article_no": {"$eq": article_no}}]}
+    )
+    return [
+        Basis(claim=meta["claim"], quote=doc, law=format_law(law_name, article_no))
+        for doc, meta in zip(hit["documents"], hit["metadatas"], strict=True)
+    ]
+
+
 def find_basis(text: str) -> list[Basis]:
     """고지서 글자에 맞는 근거 목록을 찾는다.
 
@@ -111,19 +134,7 @@ def find_basis(text: str) -> list[Basis]:
     """
     try:
         collection = _collection()
-        results: list[Basis] = []
-        for law_name, article_no in _citations(text):
-            hit = collection.get(
-                where={
-                    "$and": [{"law_name": {"$eq": law_name}}, {"article_no": {"$eq": article_no}}]
-                }
-            )
-            for doc, meta in zip(hit["documents"], hit["metadatas"], strict=True):
-                results.append(
-                    Basis(claim=meta["claim"], quote=doc, law=format_law(law_name, article_no))
-                )
-
-        return results
+        return [b for law, no in _citations(text) for b in _lookup(collection, law, no)]
     except Exception:
         log.exception("근거 검색 실패 — 근거 없이 넘어감")
         return []

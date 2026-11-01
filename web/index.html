@@ -8,7 +8,7 @@
   <link rel="icon" href="/assets/brand/web/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/assets/brand/web/apple-touch-icon.png">
   <meta name="theme-color" content="#8052FF">
-  <link rel="stylesheet" href="style.css?v=20261023b">
+  <link rel="stylesheet" href="style.css?v=20261101c">
 </head>
 <body>
   <!-- 담당: 송유영. API 는 같은 주소(/decode · /share) -->
@@ -50,12 +50,21 @@
       <h3>쉬운 말 풀이와 근거</h3>
       <ul id="basis"></ul>
 
+      <!-- 과태료 고지서면 행정청에 낼 의견 제출서 초안(질서위반행위규제법 제16조) -->
+      <div id="replySection" hidden>
+        <h3>보낼 글 초안</h3>
+        <p id="replyNote" class="reply-note"></p>
+        <pre id="replyDraft" class="reply-draft"></pre>
+        <button id="copyReplyBtn" type="button" class="share">초안 복사하기</button>
+        <p id="replyResult" class="share-result" role="status"></p>
+      </div>
+
       <!-- 손주 모드: 해독 결과(사진 제외)를 짧은 링크로 가족에게 보낸다(FR-07) -->
       <button id="shareBtn" type="button" class="share">가족에게 보내기</button>
       <p id="shareResult" class="share-result"></p>
     </section>
   </main>
 
-  <script src="app.js?v=20261101b"></script>
+  <script src="app.js?v=20261101c"></script>
 </body>
 </html>

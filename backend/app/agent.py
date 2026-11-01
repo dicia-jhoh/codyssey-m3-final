@@ -7,7 +7,7 @@
 
 import os
 
-from . import extract, rag
+from . import extract, rag, reply
 from .redact import redact
 from .sample import SAMPLE
 from .schema import Decoded, Mark, Todo
@@ -18,9 +18,19 @@ PLAIN_MAX_LINES = 3  # 쉬운 말 풀이는 근거 세 개까지 — 어르신 �
 PAY_HOW = "은행 또는 앱 납부"
 
 
+# 앞에 있는 낱말이 이긴다 — 과태료 고지서에도 「납부」가 있어서 과태료를 먼저 본다
+_KIND_WORDS = [
+    ("과태료", "과태료"),
+    ("납부", "고지서"),
+    ("가정통신", "가정통신문"),
+    ("신청", "신청서"),
+]
+REPLY_KINDS = ("신청서", "과태료")  # 보낼 글이 필요한 문서
+
+
 def classify(text: str) -> str:
-    """① 고지서 종류 판별. 지금은 낱말로만 고른다 — LLM 판별로 바꿀 자리."""
-    for word, kind in [("납부", "고지서"), ("가정통신", "가정통신문"), ("신청", "신청서")]:
+    """④ 문서 종류 판별 — 고지서에 찍히는 낱말로 고른다."""
+    for word, kind in _KIND_WORDS:
         if word in text:
             return kind
     return "안내문"
@@ -140,6 +150,10 @@ def decode(image: bytes) -> Decoded:
     text = redact(text)  # 여기서부터는 가린 글자만 쓴다
     basis = [b for b in rag.find_basis(text) if b.quote]  # 근거 없는 풀이는 버린다
     doc_type = classify(text)
+    reply_draft = ""
+    if doc_type == "과태료":
+        reply_draft = reply.draft_reply(text, api_key)
+        basis += _reply_basis(basis)
     return Decoded(
         doc_type=doc_type,
         title=text.splitlines()[0][:TITLE_MAX_CHARS],
@@ -147,5 +161,13 @@ def decode(image: bytes) -> Decoded:
         marks=marks,
         todos=_todos_from_marks(doc_type, marks),
         basis=basis,
-        reply_needed=doc_type == "신청서",
+        reply_needed=doc_type in REPLY_KINDS,
+        reply_draft=reply_draft,
     )
+
+
+def _reply_basis(already: list) -> list:
+    """의견 제출·감경 조문 — 고지서가 이미 인용한 조문은 다시 붙이지 않는다."""
+    seen = {b.law for b in already}
+    found = [rag.article(law, no) for law, no in reply.BASIS_ARTICLES]
+    return [b for b in found if b is not None and b.law not in seen]
