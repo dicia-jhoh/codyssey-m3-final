@@ -15,3 +15,5 @@ data/legal/chroma/
 
 # 공유 결과 SQLite 및 저널 파일
 data/share.db*
+.ruff_cache/
+backend/uv.lock
