@@ -8,6 +8,10 @@ from __future__ import annotations
 
 import re
 
+import httpx
+
+_BASE = "https://www.law.go.kr/DRF"
+
 
 def jo_code(article_no: str) -> str:
     """조문 번호("80", "80의2")를 법제처 API 의 6자리 JO 코드로 바꾼다.
@@ -33,3 +37,48 @@ def quote_matches(article_text: str, quote: str) -> bool:
     """
     q = _squash(quote)
     return bool(q) and q in _squash(article_text)
+
+
+def _as_list(value) -> list:
+    """법제처 JSON 은 항목이 하나면 리스트 대신 그 항목 하나만 준다 — 늘 리스트로 맞춘다."""
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def find_mst(law_name: str, oc: str) -> str:
+    """법령 이름이 정확히 같은 현행 법령의 법령일련번호(MST)를 찾는다."""
+    r = httpx.get(
+        f"{_BASE}/lawSearch.do",
+        params={"OC": oc, "target": "law", "type": "JSON", "query": law_name},
+        timeout=20,
+    )
+    r.raise_for_status()
+    for law in _as_list(r.json().get("LawSearch", {}).get("law")):
+        if law.get("법령명한글") == law_name and law.get("현행연혁코드") == "현행":
+            return law["법령일련번호"]
+    raise LookupError(f"현행 법령을 못 찾았다: {law_name}")
+
+
+def fetch_article(mst: str, jo: str, oc: str) -> str:
+    """MST + JO 코드로 조문 하나를 받아 본문 텍스트(조문·항·호·목)를 줄바꿈으로 이어 돌려준다."""
+    r = httpx.get(
+        f"{_BASE}/lawService.do",
+        params={"OC": oc, "target": "law", "type": "JSON", "MST": mst, "JO": jo},
+        timeout=20,
+    )
+    r.raise_for_status()
+    units = _as_list((r.json().get("법령", {}).get("조문") or {}).get("조문단위"))
+    lines: list[str] = []
+    for unit in units:
+        lines.append(unit.get("조문내용", ""))
+        for hang in _as_list(unit.get("항")):
+            lines.append(hang.get("항내용", ""))
+            for ho in _as_list(hang.get("호")):
+                lines.append(ho.get("호내용", ""))
+                for mok in _as_list(ho.get("목")):
+                    lines.append(mok.get("목내용", ""))
+    text = "\n".join(line for line in lines if line)
+    if not text:
+        raise LookupError(f"조문을 못 찾았다: MST={mst} JO={jo}")
+    return text
