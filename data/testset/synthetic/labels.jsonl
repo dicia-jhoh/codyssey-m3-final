@@ -1,0 +1,30 @@
+{"image": "b01.jpg", "doc_type": "고지서", "money": [48200], "deadlines": ["2026-10-31"], "documents": ["납부서"], "todos": [{"due": "2026-10-31", "amount": 48200}], "bill": "건강보험료"}
+{"image": "b02.jpg", "doc_type": "고지서", "money": [132870], "deadlines": ["2026-12-10"], "documents": [], "todos": [{"due": "2026-12-10", "amount": 132870}], "bill": "건강보험료"}
+{"image": "b03.jpg", "doc_type": "고지서", "money": [95470], "deadlines": ["2026-11-20"], "documents": ["신분증"], "todos": [{"due": "2026-11-20", "amount": 95470}], "bill": "건강보험료"}
+{"image": "b04.jpg", "doc_type": "고지서", "money": [61250], "deadlines": ["2026-11-10"], "documents": [], "todos": [{"due": "2026-11-10", "amount": 61250}], "bill": "건강보험료"}
+{"image": "b05.jpg", "doc_type": "고지서", "money": [214630], "deadlines": ["2026-12-10"], "documents": [], "todos": [{"due": "2026-12-10", "amount": 214630}], "bill": "건강보험료"}
+{"image": "b06.jpg", "doc_type": "고지서", "money": [145410], "deadlines": ["2026-12-31"], "documents": [], "todos": [{"due": "2026-12-31", "amount": 145410}], "bill": "자동차세"}
+{"image": "b07.jpg", "doc_type": "고지서", "money": [52320], "deadlines": ["2026-11-30"], "documents": ["납부서"], "todos": [{"due": "2026-11-30", "amount": 52320}], "bill": "자동차세"}
+{"image": "b08.jpg", "doc_type": "고지서", "money": [17340], "deadlines": ["2026-12-15"], "documents": [], "todos": [{"due": "2026-12-15", "amount": 17340}], "bill": "자동차세"}
+{"image": "b09.jpg", "doc_type": "고지서", "money": [324610], "deadlines": ["2026-12-31"], "documents": [], "todos": [{"due": "2026-12-31", "amount": 324610}], "bill": "자동차세"}
+{"image": "b10.jpg", "doc_type": "고지서", "money": [110600], "deadlines": ["2026-11-25"], "documents": [], "todos": [{"due": "2026-11-25", "amount": 110600}], "bill": "자동차세"}
+{"image": "b11.jpg", "doc_type": "고지서", "money": [233200], "deadlines": ["2026-11-30"], "documents": [], "todos": [{"due": "2026-11-30", "amount": 233200}], "bill": "재산세"}
+{"image": "b12.jpg", "doc_type": "고지서", "money": [412560], "deadlines": ["2026-12-15"], "documents": [], "todos": [{"due": "2026-12-15", "amount": 412560}], "bill": "재산세"}
+{"image": "b13.jpg", "doc_type": "고지서", "money": [68900], "deadlines": ["2026-11-20"], "documents": ["독촉고지서"], "todos": [{"due": "2026-11-20", "amount": 68900}], "bill": "재산세"}
+{"image": "b14.jpg", "doc_type": "고지서", "money": [95340], "deadlines": ["2026-12-10"], "documents": [], "todos": [{"due": "2026-12-10", "amount": 95340}], "bill": "재산세"}
+{"image": "b15.jpg", "doc_type": "고지서", "money": [46770], "deadlines": ["2026-12-31"], "documents": [], "todos": [{"due": "2026-12-31", "amount": 46770}], "bill": "재산세"}
+{"image": "b16.jpg", "doc_type": "고지서", "money": [53200], "deadlines": ["2026-11-25"], "documents": [], "todos": [{"due": "2026-11-25", "amount": 53200}], "bill": "전기요금"}
+{"image": "b17.jpg", "doc_type": "고지서", "money": [27680], "deadlines": ["2026-11-18"], "documents": [], "todos": [{"due": "2026-11-18", "amount": 27680}], "bill": "전기요금"}
+{"image": "b18.jpg", "doc_type": "고지서", "money": [93820], "deadlines": ["2026-11-30"], "documents": [], "todos": [{"due": "2026-11-30", "amount": 93820}], "bill": "전기요금"}
+{"image": "b19.jpg", "doc_type": "고지서", "money": [91100], "deadlines": ["2026-11-27"], "documents": ["신분증", "청구서"], "todos": [{"due": "2026-11-27", "amount": 91100}], "bill": "전기요금"}
+{"image": "b20.jpg", "doc_type": "고지서", "money": [127010], "deadlines": ["2026-12-08"], "documents": [], "todos": [{"due": "2026-12-08", "amount": 127010}], "bill": "전기요금"}
+{"image": "b21.jpg", "doc_type": "고지서", "money": [36330], "deadlines": ["2026-11-20"], "documents": [], "todos": [{"due": "2026-11-20", "amount": 36330}], "bill": "수도요금"}
+{"image": "b22.jpg", "doc_type": "고지서", "money": [22970], "deadlines": ["2026-11-25"], "documents": [], "todos": [{"due": "2026-11-25", "amount": 22970}], "bill": "수도요금"}
+{"image": "b23.jpg", "doc_type": "고지서", "money": [51640], "deadlines": ["2026-11-30"], "documents": [], "todos": [{"due": "2026-11-30", "amount": 51640}], "bill": "수도요금"}
+{"image": "b24.jpg", "doc_type": "고지서", "money": [29380], "deadlines": ["2026-12-21"], "documents": [], "todos": [{"due": "2026-12-21", "amount": 29380}], "bill": "수도요금"}
+{"image": "b25.jpg", "doc_type": "고지서", "money": [74900], "deadlines": ["2026-12-04"], "documents": ["안내문"], "todos": [{"due": "2026-12-04", "amount": 74900}], "bill": "수도요금"}
+{"image": "b26.jpg", "doc_type": "과태료", "money": [40000], "deadlines": ["2026-11-26"], "documents": [], "todos": [{"due": "2026-11-26", "amount": 40000}], "bill": "과태료"}
+{"image": "b27.jpg", "doc_type": "과태료", "money": [56000], "deadlines": ["2026-11-12"], "documents": ["의견제출서"], "todos": [{"due": "2026-11-12", "amount": 56000}], "bill": "과태료"}
+{"image": "b28.jpg", "doc_type": "과태료", "money": [120000], "deadlines": ["2026-12-02"], "documents": [], "todos": [{"due": "2026-12-02", "amount": 120000}], "bill": "과태료"}
+{"image": "b29.jpg", "doc_type": "과태료", "money": [60000], "deadlines": ["2026-11-16"], "documents": ["운전면허증", "통고서"], "todos": [{"due": "2026-11-16", "amount": 60000}], "bill": "과태료"}
+{"image": "b30.jpg", "doc_type": "과태료", "money": [50000], "deadlines": ["2026-12-11"], "documents": ["이의제기서"], "todos": [{"due": "2026-12-11", "amount": 50000}], "bill": "과태료"}

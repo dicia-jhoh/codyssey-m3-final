@@ -157,3 +157,35 @@ def test_main_runs_end_to_end_against_committed_example_image(monkeypatch, capsy
     out = capsys.readouterr().out
     assert "4/4 (100%)" in out
     assert "기준 90% 달성" in out
+
+
+def test_server_mode_posts_photos_and_writes_summary(monkeypatch, tmp_path, capsys):
+    """--server 는 배포 서버의 /decode 로 잰다 — 키 없이, 응답 시간까지 요약에 남긴다."""
+    import json
+    from unittest.mock import Mock
+
+    from scripts import score_testset
+
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    decoded = Decoded(
+        doc_type="고지서",
+        title="t",
+        plain=[],
+        marks=[Mark(kind="money", text="48,200원", value="48200", bbox=[0, 0, 0.1, 0.1])],
+        todos=[],
+        basis=[],
+    )
+    post = Mock(return_value=Mock(json=lambda: decoded.model_dump()))
+    monkeypatch.setattr(score_testset.httpx, "post", post)
+    out = tmp_path / "score.json"
+
+    assert (
+        main(["--labels", str(_EXAMPLE_LABELS), "--server", "http://x:8037/", "--out", str(out)])
+        == 0
+    )
+
+    assert post.call_args.args == ("http://x:8037/decode",)
+    summary = json.loads(out.read_text())
+    assert summary["server"] == "http://x:8037/"
+    assert summary["images"]["total"] == 1 and summary["seconds"]["mean"] >= 0
+    assert "응답 시간: 평균" in capsys.readouterr().out
