@@ -107,6 +107,8 @@ const SHARE_LINKS_KEY = "shareLinks"; // {고지서 지문: 공유 id} — 내�
 const SHARE_LINKS_KEEP = 20; // 오래된 링크 기록은 버린다(링크도 30일이면 사라진다)
 const unsynced = new Map(); // 할 일 키 → {id, done} — 서버가 아직 받지 못한 「다 했어요」
 const keptLocal = new Set(); // 서버가 받지 않는 키(링크 만료·한도) — 내 화면 기록을 지킨다
+const goneShares = new Set(); // 만료된 링크 — 더 묻지 않는다
+const touchedAt = new Map(); // 할 일 키 → 마지막으로 누른 때 — 그보다 먼저 출발한 서버 목록은 버린다
 
 // 제목은 매달 같을 수 있다(기관 이름) — 할 일(제목·기한·금액)까지 묶어 고지서를 가른다
 function billFingerprint(decoded) {
@@ -131,7 +133,8 @@ function rememberShareLink(decoded, id) {
 }
 
 function linkedShareId(decoded) {
-  return sharedId || readShareLinks()[billFingerprint(decoded)] || null;
+  const id = sharedId || readShareLinks()[billFingerprint(decoded)] || null;
+  return id && !goneShares.has(id) ? id : null;
 }
 
 function doneUrl(id) {
@@ -139,6 +142,7 @@ function doneUrl(id) {
 }
 
 async function sendDone(decoded, key, done) {
+  touchedAt.set(key, performance.now());
   const id = linkedShareId(decoded);
   if (id) await putDone(id, key, done);
 }
@@ -152,8 +156,12 @@ async function putDone(id, key, done) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key, done }),
     });
-    if (response.ok || response.status === 404 || response.status === 413) unsynced.delete(key);
-    if (!response.ok) keptLocal.add(key);
+    const gone = response.status === 404 || response.status === 413 || response.status === 400;
+    const pending = unsynced.get(key);
+    // 그 사이 다시 누른 값이 있으면 그것을 지운다 — 늦게 온 옛 응답이 새 값을 지우지 않게
+    if ((response.ok || gone) && pending?.id === id && pending.done === done) unsynced.delete(key);
+    if (response.ok) keptLocal.delete(key);
+    else if (gone) keptLocal.add(key); // 5xx 는 잠깐의 실패라 다음 확인 때 다시 보낸다
   } catch (err) {
     console.error(err); // 연결이 끊겼다 — refreshDone 이 다시 보낸다
   }
@@ -167,13 +175,16 @@ async function resendUnsynced() {
 async function pullDone(decoded) {
   const id = linkedShareId(decoded);
   if (!id) return false;
+  const startedAt = performance.now();
   const response = await fetch(doneUrl(id));
+  if (response.status === 404) goneShares.add(id); // 링크가 만료됐다 — 20초마다 묻지 않는다
   if (!response.ok) return false;
   const remote = new Set((await response.json()).done);
   let changed = false;
   for (const todo of decoded.todos) {
     const key = todoKey(decoded, todo);
     if (unsynced.has(key) || keptLocal.has(key)) continue; // 서버에 아직 없는 내 기록이 이긴다
+    if ((touchedAt.get(key) ?? -1) > startedAt) continue; // 묻고 나서 누른 것은 이 목록보다 새롭다
     if (remote.has(key) === completedTodos.has(key)) continue;
     if (remote.has(key)) completedTodos.add(key);
     else completedTodos.delete(key);
@@ -312,17 +323,19 @@ async function shrinkPhoto(file) {
 // ── 가족에게 보내기 ──
 
 $("shareBtn").addEventListener("click", async () => {
-  if (!currentDecoded) return;
+  // 링크를 만드는 사이 다른 사진의 해독이 끝나도 이 고지서에 묶는다
+  const decoded = currentDecoded;
+  if (!decoded) return;
   $("shareResult").textContent = "링크 만드는 중…";
   try {
     const response = await fetch("/share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(currentDecoded),
+      body: JSON.stringify(decoded),
     });
     if (!response.ok) throw new Error(String(response.status));
     const { share_id, expires_at } = await response.json();
-    await linkShare(currentDecoded, share_id);
+    await linkShare(decoded, share_id);
     await handOver(`${location.origin}${location.pathname}?share=${share_id}`, openUntil(expires_at));
   } catch (err) {
     console.error(err);
@@ -439,7 +452,9 @@ function displayToday(decoded) {
   if (parts) {
     const [year, month, day] = parts.slice(1).map(Number);
     const override = new Date(year, month - 1, day);
-    const real = override.getMonth() === month - 1 && override.getDate() === day;
+    override.setFullYear(year); // 0~99 년을 1900 년대로 바꾸는 Date 생성자를 되돌린다
+    const real =
+      override.getFullYear() === year && override.getMonth() === month - 1 && override.getDate() === day;
     if (real) today = override;
   }
   today.setHours(0, 0, 0, 0);
