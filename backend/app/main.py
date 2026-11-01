@@ -15,7 +15,7 @@ from starlette.concurrency import run_in_threadpool
 
 from . import ROOT
 from .agent import decode
-from .notify import notify_deadlines
+from .notify import kakao_alerts, notify_deadlines
 from .schema import Decoded
 from .share import create_share, done_keys, get_share, mark_done, share_expires_at
 
@@ -161,6 +161,7 @@ async def decode_photo(background_tasks: BackgroundTasks, file: UploadFile = Fil
         raise HTTPException(400, "빈 사진 파일이에요")
     # 사진은 메모리에서만 쓰고 저장하지 않는다(AI 윤리 — 동의 없이 보관 금지)
     decoded = await run_in_threadpool(decode, image)
+    decoded = decoded.model_copy(update={"alerts": kakao_alerts(decoded)})
     background_tasks.add_task(notify_deadlines, decoded)
     return decoded
 

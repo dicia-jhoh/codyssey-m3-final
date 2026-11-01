@@ -365,6 +365,7 @@ function show(decoded) {
   $("title").textContent = decoded.title;
   $("marks").replaceChildren(...decoded.marks.map(markBox));
   renderTodos(decoded);
+  renderAlerts(decoded.alerts || []);
   $("basis").replaceChildren(...basisItems(decoded.basis));
   showReply(decoded);
   $("shareResult").textContent = "";
@@ -485,6 +486,23 @@ function doneButton(li, decoded, key) {
     sendDone(decoded, key, done);
   });
   return button;
+}
+
+// 기한 사흘 전·당일 알림 — 카카오톡 말풍선 모양 미리보기(가상 발송, notify.py)
+function renderAlerts(alerts) {
+  $("alertSection").hidden = !alerts.length;
+  $("alerts").replaceChildren(...alerts.map((alert) => {
+    const li = document.createElement("li");
+    const when = document.createElement("span");
+    const sendOn = parseLocalDate(alert.send_on);
+    when.className = "when";
+    when.textContent = sendOn ? `${sendOn.getMonth() + 1}월 ${sendOn.getDate()}일 오전 9시 · ${alert.when}` : alert.when;
+    const bubble = document.createElement("span");
+    bubble.className = "bubble";
+    bubble.textContent = alert.message;
+    li.append(when, bubble);
+    return li;
+  }));
 }
 
 // 과태료 고지서의 의견 제출서 초안 — 의견 제출 기한 안에 내면 20%까지 줄어든다(시행령 제5조)

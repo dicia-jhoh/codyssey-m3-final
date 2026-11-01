@@ -61,3 +61,9 @@ blockquote { margin: 4px 0 12px; padding-left: 10px; border-left: 3px solid #ccc
 
 .reply-note { font-weight: 700; color: var(--deadline); }
 .reply-draft { margin: 0; padding: 14px; white-space: pre-wrap; font: inherit; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); }
+.alert-note { font-size: 0.9rem; color: #555; }
+.kakao { list-style: none; padding: 12px; margin: 0; background: #b2c7da; border-radius: 12px; }
+.kakao li { margin-bottom: 10px; }
+.kakao li:last-child { margin-bottom: 0; }
+.kakao .when { display: block; font-size: 0.8rem; font-weight: 700; color: #1f2d3d; }
+.kakao .bubble { display: inline-block; max-width: 90%; padding: 8px 12px; background: #fee500; color: #111; border-radius: 4px 12px 12px 12px; }
