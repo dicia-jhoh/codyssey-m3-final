@@ -5,7 +5,6 @@ import subprocess
 from collections import deque
 from datetime import UTC, datetime
 from math import ceil
-from pathlib import Path
 from time import monotonic
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
@@ -13,6 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
+from . import ROOT
 from .agent import decode
 from .notify import notify_deadlines
 from .schema import Decoded
@@ -23,7 +23,6 @@ MULTIPART_OVERHEAD = 64 * 1024  # multipart 경계·파일명 등 파일 외 메
 MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
 DECODE_PER_MINUTE = max(1, int(os.environ.get("DECODE_PER_MINUTE", "10")))
 _decode_requests: dict[str, deque[float]] = {}
-ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
 

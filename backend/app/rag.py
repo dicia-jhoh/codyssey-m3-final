@@ -12,17 +12,20 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from pathlib import Path
 
 import chromadb
 
+from . import ROOT
 from .schema import Basis
 
 log = logging.getLogger(__name__)
 
-_CHROMA_DIR = Path(__file__).resolve().parents[2] / "data" / "legal" / "chroma"
+ARTICLES_PATH = ROOT / "data" / "legal" / "articles.jsonl"
+_CHROMA_DIR = ROOT / "data" / "legal" / "chroma"
 # 이름에 "dummy"를 박아 둔다 — 진짜 임베딩(예: 384차원)으로 바꾸면 컬렉션을 통째로
 # 새로 만들어야 하는데(Chroma는 컬렉션의 임베딩 차원을 처음 넣을 때 고정한다), 이름이
 # 같으면 차원 불일치 에러가 난다. 이름을 바꾸면 자연스럽게 새 컬렉션으로 분리된다.
@@ -64,9 +67,17 @@ def add_article(*, law_name: str, article_no: str, quote: str, claim: str) -> No
     )
 
 
-def _format_law(law_name: str, article_no: str) -> str:
-    """ "80의2" → "제80조의2", "80" → "제80조". article_no에 "의"가 섞여 있으면
-    조 번호와 분리해서 올바른 위치에 "조"를 끼워 넣는다."""
+def read_articles(path: Path = ARTICLES_PATH) -> list[dict]:
+    """articles.jsonl 의 조문 줄을 차례로 읽는다(빈 줄은 건너뛴다) — 적재·대조가 함께 쓴다."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
+
+
+def format_law(law_name: str, article_no: str) -> str:
+    """화면에 내는 조문 이름 — "80의2" → "제80조의2", "80" → "제80조".
+
+    「의N」은 「조」 뒤에 온다. 적재 오류·대조 결과도 같은 표기를 쓴다.
+    """
     if "의" in article_no:
         main, sub = article_no.split("의", 1)
         return f"{law_name} 제{main}조의{sub}"
@@ -109,7 +120,7 @@ def find_basis(text: str) -> list[Basis]:
             )
             for doc, meta in zip(hit["documents"], hit["metadatas"], strict=True):
                 results.append(
-                    Basis(claim=meta["claim"], quote=doc, law=_format_law(law_name, article_no))
+                    Basis(claim=meta["claim"], quote=doc, law=format_law(law_name, article_no))
                 )
 
         return results

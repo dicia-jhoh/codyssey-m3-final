@@ -11,13 +11,12 @@ Chroma DB(data/legal/chroma/)는 .gitignore 대상이라 사람마다 로컬에 
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 from app import rag
 
-_DEFAULT_ARTICLES = Path(__file__).resolve().parents[2] / "data" / "legal" / "articles.jsonl"
+_DEFAULT_ARTICLES = rag.ARTICLES_PATH
 
 _REQUIRED_FIELDS = ("law_name", "article_no", "quote", "claim")
 
@@ -26,18 +25,14 @@ def load(path: Path = _DEFAULT_ARTICLES) -> int:
     """articles.jsonl의 조문을 전부 rag.add_article()로 넣는다. 넣은 개수를 돌려준다."""
     count = 0
     seen: set[tuple[str, str]] = set()
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        row = json.loads(line)
+    for row in rag.read_articles(path):
         missing = [f for f in _REQUIRED_FIELDS if not row.get(f)]
         if missing:
             raise ValueError(f"{path}: 필수 필드 누락 {missing} — {row}")
         key = (row["law_name"], row["article_no"])
         if key in seen:
             # Chroma 는 같은 id 를 덮어써서(upsert) 앞 줄이 조용히 사라진다 — 미리 막는다
-            raise ValueError(f"{path}: 같은 조문이 두 번 — {key[0]} 제{key[1]}조")
+            raise ValueError(f"{path}: 같은 조문이 두 번 — {rag.format_law(*key)}")
         seen.add(key)
         rag.add_article(
             law_name=row["law_name"],
