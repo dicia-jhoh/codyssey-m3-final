@@ -1,0 +1,48 @@
+{
+ "measured_on": "2026-11-01",
+ "items": {
+  "correct": 93,
+  "total": 102,
+  "accuracy": 0.9117647058823529
+ },
+ "images": {
+  "all_correct": 26,
+  "total": 30
+ },
+ "failures": 0,
+ "doc_type": {
+  "correct": 29,
+  "total": 30
+ },
+ "by_bill": {
+  "건강보험료": {
+   "correct": 17,
+   "total": 17
+  },
+  "자동차세": {
+   "correct": 9,
+   "total": 16
+  },
+  "재산세": {
+   "correct": 16,
+   "total": 16
+  },
+  "전기요금": {
+   "correct": 17,
+   "total": 17
+  },
+  "수도요금": {
+   "correct": 15,
+   "total": 16
+  },
+  "과태료": {
+   "correct": 19,
+   "total": 20
+  }
+ },
+ "seconds": {
+  "mean": 3.922617261794706,
+  "max": 9.799353651702404
+ },
+ "server": "http://localhost:8037"
+}
