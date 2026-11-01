@@ -14,11 +14,11 @@ import time
 from contextlib import closing
 from pathlib import Path
 
+from . import ROOT
 from .schema import Decoded
 
 DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60
 MAX_SHARES = 1000
-ROOT = Path(__file__).resolve().parents[2]
 _lock = threading.Lock()
 
 

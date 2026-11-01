@@ -10,25 +10,18 @@ LAW_OC 환경변수(없으면 팀 공용 parapuda). 조문을 추가하는 절�
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
 
-from app import lawapi
-from app.rag import _format_law  # 화면 근거와 같은 「제80조의2」 표기
-
-_DEFAULT_ARTICLES = Path(__file__).resolve().parents[2] / "data" / "legal" / "articles.jsonl"
+from app import lawapi, rag
 
 
 def verify(path: Path, oc: str) -> int:
     """조문마다 결과 한 줄을 찍고 FAIL 개수를 돌려준다."""
     failed = 0
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
-        name = _format_law(row["law_name"], row["article_no"])
+    for row in rag.read_articles(path):
+        name = rag.format_law(row["law_name"], row["article_no"])
         try:
             mst = lawapi.find_mst(row["law_name"], oc)
             text = lawapi.fetch_article(mst, lawapi.jo_code(row["article_no"]), oc)
@@ -45,7 +38,7 @@ def verify(path: Path, oc: str) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    path = Path(argv[0]) if argv else _DEFAULT_ARTICLES
+    path = Path(argv[0]) if argv else rag.ARTICLES_PATH
     if not path.exists():
         print(f"[!] 파일 없음: {path}")
         return 1

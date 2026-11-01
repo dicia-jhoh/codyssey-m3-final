@@ -25,3 +25,10 @@ def test_same_article_twice_stops_loading(tmp_path: Path):
     path.write_text(_row("115", "앞 원문") + "\n" + _row("115", "뒤 원문"), encoding="utf-8")
     with pytest.raises(ValueError, match="두 번"):
         load(path)
+
+
+def test_duplicate_message_names_branch_article_like_the_screen(tmp_path: Path):
+    path = tmp_path / "articles.jsonl"
+    path.write_text(_row("80의2", "앞") + "\n" + _row("80의2", "뒤"), encoding="utf-8")
+    with pytest.raises(ValueError, match="지방세법 제80조의2"):
+        load(path)

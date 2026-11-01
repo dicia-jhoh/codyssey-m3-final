@@ -20,10 +20,11 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from app import ROOT
 from app.agent import decode
 from app.schema import Decoded
 
-_DEFAULT_LABELS = Path(__file__).resolve().parents[2] / "data" / "testset" / "labels.jsonl"
+_DEFAULT_LABELS = ROOT / "data" / "testset" / "labels.jsonl"
 
 
 @dataclass
