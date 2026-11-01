@@ -8,7 +8,7 @@
   <link rel="icon" href="/assets/brand/web/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/assets/brand/web/apple-touch-icon.png">
   <meta name="theme-color" content="#8052FF">
-  <link rel="stylesheet" href="style.css?v=20261101c">
+  <link rel="stylesheet" href="style.css?v=20261101d">
 </head>
 <body>
   <!-- 담당: 송유영. API 는 같은 주소(/decode · /share) -->
@@ -47,6 +47,13 @@
       <h3>할 일</h3>
       <ul id="todos" class="cards"></ul>
 
+      <!-- 기한 사흘 전·당일 오전 9시 알림 — 카카오톡 모양 미리보기(가상 발송) -->
+      <div id="alertSection" hidden>
+        <h3>카카오톡 알림</h3>
+        <p class="alert-note">이 날짜 오전 9시에 이렇게 알려 드려요. 카카오톡과 연결돼 있지 않아 실제로 보내지는 않아요.</p>
+        <ul id="alerts" class="kakao"></ul>
+      </div>
+
       <h3>쉬운 말 풀이와 근거</h3>
       <ul id="basis"></ul>
 
@@ -65,6 +72,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=20261101c"></script>
+  <script src="app.js?v=20261101d"></script>
 </body>
 </html>

@@ -37,6 +37,14 @@ class Basis(BaseModel):
     law: str = ""  # 예: "국민건강보험법 제80조"
 
 
+class Alert(BaseModel):
+    """기한 알림 한 통 — 카카오톡 모양으로 보여 주는 가상 발송이다(실제 카카오 연결은 없다)."""
+
+    send_on: str  # "YYYY-MM-DD" — 그날 오전 9시
+    when: Literal["사흘 전", "당일"]
+    message: str
+
+
 class Decoded(BaseModel):
     """POST /decode 응답 전체."""
 
@@ -48,5 +56,6 @@ class Decoded(BaseModel):
     basis: list[Basis]
     reply_needed: bool = False
     reply_draft: str = ""
+    alerts: list[Alert] = []  # 기한 사흘 전·당일 알림(가상 카카오톡)
     sample: bool = False  # True 면 샘플 모드 — 화면이 배너를 띄운다
     ai_notice: str = "AI 풀이 — 원문을 함께 확인하세요"
