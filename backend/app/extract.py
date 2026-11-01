@@ -1,6 +1,6 @@
 """사진 → 글자·표시(Mark) 추출 — 담당: 황지영.
 
-할 일
+하는 일
 1. 비전 LLM 에 사진을 보내 schema.Mark 목록과 원문 글자를 JSON 으로 받는다
    (docs/03-AI-설계.md 「프롬프트」).
 2. 금액·날짜는 LLM 값과 사진 속 숫자를 한 번 더 대조한다.
@@ -9,17 +9,22 @@
    [x, y, w, h](0~1)로 바꾼다 — 화면이 사진 크기와 상관없이 3색을 그리게 하려는 것.
 """
 
+import argparse
 import base64
 import json
 import logging
 import math
+import os
 import re
+from collections.abc import Iterator
 from datetime import date
+from pathlib import Path
+from typing import get_args
 
 import httpx
 from anthropic import Anthropic
 
-from .schema import Mark
+from .schema import Mark, MarkKind
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +35,9 @@ _GEMINI_KEY_PREFIXES = ("AIza", "AQ.")
 _GEMINI_MODEL = "gemini-flash-lite-latest"  # 무료 한도가 넉넉한 쪽
 _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 _USER_PROMPT = "이 고지서 사진에서 항목을 뽑아 JSON으로만 답하라."
+_MAX_TOKENS = 4096  # 본문 전체 + 항목 목록이 잘리지 않을 만큼
+_VISION_TIMEOUT_SECONDS = 90  # 큰 사진의 Gemini 응답 실측이 30초 안팎이다
+_MARK_KINDS = get_args(MarkKind)
 
 _SYSTEM_PROMPT = """\
 너는 한국 고지서(납부고지서·가정통신문·주민센터 안내문 등) 사진을 읽는 비전 분석기다.
@@ -104,6 +112,10 @@ def _media_type(image: bytes) -> str:
     return "image/jpeg"
 
 
+def _image_data(image: bytes) -> str:
+    return base64.b64encode(image).decode("ascii")
+
+
 def _call_vision(image: bytes, api_key: str) -> dict:
     """비전 LLM 에 사진을 보내 (document_text, items) 원시 JSON을 받는다.
 
@@ -114,7 +126,7 @@ def _call_vision(image: bytes, api_key: str) -> dict:
     client = Anthropic(api_key=api_key)
     response = client.messages.create(
         model=_MODEL,
-        max_tokens=4096,
+        max_tokens=_MAX_TOKENS,
         system=_SYSTEM_PROMPT,
         messages=[
             {
@@ -125,7 +137,7 @@ def _call_vision(image: bytes, api_key: str) -> dict:
                         "source": {
                             "type": "base64",
                             "media_type": _media_type(image),
-                            "data": base64.b64encode(image).decode("ascii"),
+                            "data": _image_data(image),
                         },
                     },
                     {"type": "text", "text": _USER_PROMPT},
@@ -144,9 +156,8 @@ def _call_gemini(image: bytes, api_key: str) -> dict:
     httpx 오류 문구에는 URL 이 들어가서 ?key= 로 보내면 키가 로그에 찍힌다.
     """
     media_type = _media_type(image)
-    if (
-        media_type == "image/gif"
-    ):  # Gemini 는 PNG·JPEG·WebP·HEIC 만 받는다 — 400 이 원인 없이 샘플로 새지 않게
+    # Gemini 는 PNG·JPEG·WebP·HEIC 만 받는다 — 400 이 원인 없이 샘플로 새지 않게
+    if media_type == "image/gif":
         raise UnsupportedImageFormatError("GIF 는 Gemini 가 받지 않음 — JPEG/PNG 로 올려야 함")
     response = httpx.post(
         _GEMINI_URL.format(model=_GEMINI_MODEL),
@@ -160,7 +171,7 @@ def _call_gemini(image: bytes, api_key: str) -> dict:
                         {
                             "inline_data": {
                                 "mime_type": media_type,
-                                "data": base64.b64encode(image).decode("ascii"),
+                                "data": _image_data(image),
                             }
                         },
                         {"text": _USER_PROMPT},
@@ -169,7 +180,7 @@ def _call_gemini(image: bytes, api_key: str) -> dict:
             ],
             "generationConfig": {"responseMimeType": "application/json"},
         },
-        timeout=90,
+        timeout=_VISION_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
     parts = response.json()["candidates"][0]["content"]["parts"]
@@ -196,10 +207,19 @@ _DATE_RE_FULL = re.compile(
 _DATE_RE_MD = re.compile(r"(\d{1,2})월\s*(\d{1,2})일")  # "10월 31일" — 연도를 안 적는 공문이 흔함
 
 
+def _won(match: re.Match[str]) -> int:
+    return int(match.group(1).replace(",", ""))
+
+
+def _amounts_in(text: str) -> set[int]:
+    """본문에 적힌 금액 전부 — 「원」이 붙은 수와 세 자리 쉼표 수."""
+    return {_won(m) for regex in (_AMOUNT_RE, _GROUPED_RE) for m in regex.finditer(text)}
+
+
 def _parse_amount_won(text: str) -> int | None:
     m = _AMOUNT_RE.search(text) or _GROUPED_RE.search(text)
     if m:
-        return int(m.group(1).replace(",", ""))
+        return _won(m)
     # 모델이 value 에 준 깨끗한 값("6170")
     return int(text) if text.isdecimal() else None  # isdigit 은 「²」도 참이라 int() 가 터진다(OCR)
 
@@ -236,7 +256,7 @@ def _resolve_month_day(
     return iso
 
 
-def _dates(text: str, *, fallback_year: int):
+def _dates(text: str, *, fallback_year: int) -> Iterator[str | None]:
     """본문의 날짜를 "YYYY.MM.DD" 형식부터, 다음 "MM월 DD일" 형식 순서로 ISO 로 낸다.
 
     달력에 없는 날짜는 None 이다.
@@ -314,11 +334,7 @@ def _double_check(
     fallback_year: "10월 31일"처럼 연도가 없는 날짜를 만났을 때 쓸 연도(기본값: 올해).
     """
     fallback_year = fallback_year or date.today().year
-    doc_amounts = {
-        int(m.group(1).replace(",", ""))
-        for regex in (_AMOUNT_RE, _GROUPED_RE)
-        for m in regex.finditer(document_text)
-    }
+    doc_amounts = _amounts_in(document_text)
     doc_dates = _document_dates(document_text, fallback_year=fallback_year)
 
     marks: list[Mark] = []
@@ -327,30 +343,34 @@ def _double_check(
             continue
         kind = item.get("kind")
         text = item.get("text")
-        value = str(item.get("value") or "")
         bbox = _to_bbox(item)
-        if kind not in ("money", "deadline", "document") or not isinstance(text, str) or not text:
-            continue  # 모양이 안 맞는 항목은 버린다 — 모델 출력은 신뢰 못 함
-        if bbox is None:
+        # 모양이 안 맞는 항목은 버린다 — 모델 출력은 신뢰 못 함
+        if kind not in _MARK_KINDS or not isinstance(text, str) or not text or bbox is None:
             continue
-
+        raw_value = str(item.get("value") or "")
         if kind == "money":
-            amount = _parse_amount_won(value) or _parse_amount_won(text)
-            if amount is None or amount not in doc_amounts:
-                continue
-            value = str(amount)
+            value = _checked_amount(raw_value, text, doc_amounts)
         elif kind == "deadline":
-            date_iso = _parse_date_iso(value, fallback_year=fallback_year) or _parse_date_iso(
-                text, fallback_year=fallback_year
-            )
-            if date_iso is None or date_iso not in doc_dates:
-                continue
-            value = date_iso
-        # document 종류는 금액·날짜가 아니므로 이중 확인 대상이 아니다
-
-        marks.append(Mark(kind=kind, text=text, value=value, bbox=bbox))
-
+            value = _checked_date(raw_value, text, doc_dates, fallback_year)
+        else:
+            value = raw_value  # 서류는 금액·날짜가 아니라 대조할 것이 없다
+        if value is not None:
+            marks.append(Mark(kind=kind, text=text, value=value, bbox=bbox))
     return marks
+
+
+def _checked_amount(value: str, text: str, doc_amounts: set[int]) -> str | None:
+    """본문에도 있는 금액이면 숫자만 남긴 값, 아니면 None."""
+    amount = _parse_amount_won(value) or _parse_amount_won(text)
+    return str(amount) if amount is not None and amount in doc_amounts else None
+
+
+def _checked_date(value: str, text: str, doc_dates: set[str], fallback_year: int) -> str | None:
+    """본문에도 있는 날짜면 ISO 값, 아니면 None."""
+    date_iso = _parse_date_iso(value, fallback_year=fallback_year) or _parse_date_iso(
+        text, fallback_year=fallback_year
+    )
+    return date_iso if date_iso in doc_dates else None
 
 
 def extract(image: bytes, api_key: str) -> tuple[str, list[Mark]]:
@@ -386,9 +406,6 @@ def _main(argv: list[str] | None = None) -> int:
     agent.py를 거치지 않고 extract()만 바로 호출하므로, 키가 맞게 동작하는지
     빠르게 확인하고 싶을 때 쓴다 — 샘플 모드로 숨겨지지 않고 실패가 그대로 보인다.
     """
-    import argparse
-    import os
-    from pathlib import Path
 
     parser = argparse.ArgumentParser(description=_main.__doc__)
     parser.add_argument("image", help="고지서 사진 경로")
