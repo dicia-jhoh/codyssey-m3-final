@@ -40,12 +40,16 @@ def _connect() -> sqlite3.Connection:
     return db
 
 
+def _delete_expired(db: sqlite3.Connection, now: float) -> None:
+    db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
+
+
 def create_share(decoded: Decoded, *, ttl_seconds: float = DEFAULT_TTL_SECONDS) -> str:
     """해독 결과만 저장하고 공유 ID를 돌려준다."""
     share_id = secrets.token_urlsafe(8)
     now = time.time()
     with _lock, closing(_connect()) as db, db:
-        db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
+        _delete_expired(db, now)
         db.execute(
             "INSERT INTO shares VALUES (?, ?, ?, ?)",
             (share_id, decoded.model_dump_json(), now + ttl_seconds, now),
@@ -62,7 +66,7 @@ def get_share(share_id: str, *, now: float | None = None) -> Decoded | None:
     """없거나 만료된 공유는 None을 돌려주며 만료분은 지운다."""
     now = time.time() if now is None else now
     with _lock, closing(_connect()) as db, db:
-        db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
+        _delete_expired(db, now)
         row = db.execute("SELECT body FROM shares WHERE id = ?", (share_id,)).fetchone()
     return Decoded.model_validate_json(row[0]) if row else None
 
