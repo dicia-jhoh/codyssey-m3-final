@@ -8,15 +8,14 @@ from math import ceil
 from pathlib import Path
 from time import monotonic
 
-from fastapi import BackgroundTasks
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from .agent import decode
-from .schema import Decoded
 from .notify import notify_deadlines
+from .schema import Decoded
 from .share import create_share, get_share, share_expires_at
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
@@ -27,11 +26,16 @@ _decode_requests: dict[str, deque[float]] = {}
 ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
+
 def _read_commit() -> str:
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
-            capture_output=True, text=True, check=True, timeout=2,
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=2,
         )
         return result.stdout.strip() or "unknown"
     except (OSError, subprocess.SubprocessError):
@@ -114,7 +118,8 @@ async def limit_decode_requests(request, call_next):
         if len(times) >= DECODE_PER_MINUTE:
             retry_after = max(1, ceil(times[0] + 60 - now))
             return JSONResponse(
-                {"detail": "잠시 뒤 다시 올려 주세요"}, status_code=429,
+                {"detail": "잠시 뒤 다시 올려 주세요"},
+                status_code=429,
                 headers={"Retry-After": str(retry_after)},
             )
         # await 전에 기록하므로 같은 이벤트 루프의 동시 요청도 한도를 공유한다.
@@ -124,7 +129,8 @@ async def limit_decode_requests(request, call_next):
 
 @app.middleware("http")
 async def revalidate_pages(request, call_next):
-    # 글·코드가 바뀌면 바로 보이게 — 브라우저가 옛 site.js 를 캐시에서 꺼내 「이름 없는 서비스」를 보인 적이 있다.
+    # 글·코드가 바뀌면 바로 보이게 — 브라우저가 옛 site.js 를 캐시에서 꺼내
+    # 「이름 없는 서비스」를 보인 적이 있다.
     # no-cache 는 「저장은 하되 쓰기 전에 서버에 물어본다」라 바뀌지 않았으면 304 로 가볍게 끝난다.
     response = await call_next(request)
     path = request.url.path
@@ -162,7 +168,11 @@ def share_decoded(decoded: Decoded) -> dict:
     share_id = create_share(decoded)
     expires_at = share_expires_at(share_id)
     # 화면이 「며칠까지 열려요」를 보여 줄 수 있게 만료 시각(UTC ISO)도 같이 준다
-    expires_iso = datetime.fromtimestamp(expires_at, UTC).isoformat(timespec="seconds") if expires_at else None
+    expires_iso = (
+        datetime.fromtimestamp(expires_at, UTC).isoformat(timespec="seconds")
+        if expires_at
+        else None
+    )
     return {"share_id": share_id, "expires_at": expires_iso}
 
 

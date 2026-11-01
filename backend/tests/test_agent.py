@@ -14,12 +14,19 @@ def test_todos_from_marks_pairs_money_with_nearest_deadline():
     # document Mark("신분증")가 있으면 how에 준비물 문구가 붙는다(이슈 #20-4).
     marks = [
         Mark(kind="money", text="금 48,200원", value="48200", bbox=[0.6, 0.18, 0.3, 0.06]),
-        Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0.6, 0.26, 0.3, 0.06]),
+        Mark(
+            kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0.6, 0.26, 0.3, 0.06]
+        ),
         Mark(kind="document", text="신분증", value="", bbox=[0.1, 0.7, 0.5, 0.08]),
     ]
     todos = _todos_from_marks("고지서", marks)
     assert todos == [
-        Todo(title="고지서 돈 내기", due="2026-10-31", amount=48200, how="은행 또는 앱 납부 · 신분증 챙기기")
+        Todo(
+            title="고지서 돈 내기",
+            due="2026-10-31",
+            amount=48200,
+            how="은행 또는 앱 납부 · 신분증 챙기기",
+        )
     ]
 
 
@@ -121,7 +128,12 @@ def test_decode_builds_todos_from_extracted_marks(monkeypatch):
             "납부금액: 금 48,200원\n납부기한: 2026.10.31까지",
             [
                 Mark(kind="money", text="금 48,200원", value="48200", bbox=[0.6, 0.18, 0.3, 0.06]),
-                Mark(kind="deadline", text="2026.10.31까지", value="2026-10-31", bbox=[0.6, 0.26, 0.3, 0.06]),
+                Mark(
+                    kind="deadline",
+                    text="2026.10.31까지",
+                    value="2026-10-31",
+                    bbox=[0.6, 0.26, 0.3, 0.06],
+                ),
             ],
         ),
     )

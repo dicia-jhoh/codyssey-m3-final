@@ -21,12 +21,15 @@ def jo_code(article_no: str) -> str:
     """
     m = re.fullmatch(r"(\d+)(?:의(\d+))?", article_no.strip())
     if not m:
-        raise ValueError(f"조문 번호 모양이 아니다: {article_no!r} (예: \"80\", \"80의2\")")
+        raise ValueError(f'조문 번호 모양이 아니다: {article_no!r} (예: "80", "80의2")')
     return f"{int(m.group(1)):04d}{int(m.group(2) or 0):02d}"
 
 
 def _squash(text: str) -> str:
-    """공백·줄바꿈을 전부 지운다 — 원문과 quote 의 띄어쓰기 차이(「말한다) 까지」 vs 「말한다)까지」)를 무시하려고."""
+    """공백·줄바꿈을 전부 지운다.
+
+    원문과 quote 의 띄어쓰기 차이(「말한다) 까지」 vs 「말한다)까지」)를 무시하려고.
+    """
     return re.sub(r"\s+", "", text)
 
 

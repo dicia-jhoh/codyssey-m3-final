@@ -17,10 +17,23 @@ def _fake_api(monkeypatch, article_text: str):
 def test_ok_and_fail_rows_exit_1(tmp_path, monkeypatch, capsys):
     _fake_api(monkeypatch, "① 연체금을 징수한다.")
     path = tmp_path / "articles.jsonl"
-    _write_jsonl(path, [
-        {"law_name": "국민건강보험법", "article_no": "80", "quote": "연체금을 징수한다.", "claim": "풀이"},
-        {"law_name": "국민연금법", "article_no": "97", "quote": "연체금이 부과됩니다.", "claim": "풀이"},
-    ])
+    _write_jsonl(
+        path,
+        [
+            {
+                "law_name": "국민건강보험법",
+                "article_no": "80",
+                "quote": "연체금을 징수한다.",
+                "claim": "풀이",
+            },
+            {
+                "law_name": "국민연금법",
+                "article_no": "97",
+                "quote": "연체금이 부과됩니다.",
+                "claim": "풀이",
+            },
+        ],
+    )
 
     assert verify_legal_articles.main([str(path)]) == 1
 
@@ -32,9 +45,17 @@ def test_ok_and_fail_rows_exit_1(tmp_path, monkeypatch, capsys):
 def test_all_ok_exit_0(tmp_path, monkeypatch, capsys):
     _fake_api(monkeypatch, "① 연체금을 징수한다.")
     path = tmp_path / "articles.jsonl"
-    _write_jsonl(path, [
-        {"law_name": "국민건강보험법", "article_no": "80의2", "quote": "연체금을 징수한다.", "claim": "풀이"},
-    ])
+    _write_jsonl(
+        path,
+        [
+            {
+                "law_name": "국민건강보험법",
+                "article_no": "80의2",
+                "quote": "연체금을 징수한다.",
+                "claim": "풀이",
+            },
+        ],
+    )
 
     assert verify_legal_articles.main([str(path)]) == 0
     assert capsys.readouterr().out == "[OK] 국민건강보험법 제80조의2\n"

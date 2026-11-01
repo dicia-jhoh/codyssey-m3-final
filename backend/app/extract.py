@@ -1,8 +1,10 @@
 """사진 → 글자·표시(Mark) 추출 — 담당: 황지영.
 
 할 일
-1. 비전 LLM 에 사진을 보내 schema.Mark 목록과 원문 글자를 JSON 으로 받는다(docs/03-AI-설계.md 「프롬프트」).
-2. 금액·날짜는 LLM 값과 사진 속 숫자를 한 번 더 대조한다. 어긋나면 그 Mark 는 빼고 「직접 확인 필요」로 남긴다.
+1. 비전 LLM 에 사진을 보내 schema.Mark 목록과 원문 글자를 JSON 으로 받는다
+   (docs/03-AI-설계.md 「프롬프트」).
+2. 금액·날짜는 LLM 값과 사진 속 숫자를 한 번 더 대조한다.
+   어긋나면 그 Mark 는 빼고 「직접 확인 필요」로 남긴다.
 3. 위치는 모델에게 box_2d([위, 왼쪽, 아래, 오른쪽], 0~1000)로 받아 사진 크기 대비 비율 bbox
    [x, y, w, h](0~1)로 바꾼다 — 화면이 사진 크기와 상관없이 3색을 그리게 하려는 것.
 """
@@ -64,7 +66,18 @@ class UnsupportedImageFormatError(ValueError):
 
 
 # HEIC/HEIF(ISO 기반 미디어 파일) 브랜드 코드 — ftyp 박스 뒤에 온다.
-_HEIC_BRANDS = (b"heic", b"heix", b"heim", b"heis", b"hevc", b"hevx", b"hevm", b"hevs", b"mif1", b"msf1")
+_HEIC_BRANDS = (
+    b"heic",
+    b"heix",
+    b"heim",
+    b"heis",
+    b"hevc",
+    b"hevx",
+    b"hevm",
+    b"hevs",
+    b"mif1",
+    b"msf1",
+)
 
 
 def _media_type(image: bytes) -> str:
@@ -131,7 +144,9 @@ def _call_gemini(image: bytes, api_key: str) -> dict:
     httpx 오류 문구에는 URL 이 들어가서 ?key= 로 보내면 키가 로그에 찍힌다.
     """
     media_type = _media_type(image)
-    if media_type == "image/gif":  # Gemini 는 PNG·JPEG·WebP·HEIC 만 받는다 — 400 이 원인 없이 샘플로 새지 않게
+    if (
+        media_type == "image/gif"
+    ):  # Gemini 는 PNG·JPEG·WebP·HEIC 만 받는다 — 400 이 원인 없이 샘플로 새지 않게
         raise UnsupportedImageFormatError("GIF 는 Gemini 가 받지 않음 — JPEG/PNG 로 올려야 함")
     response = httpx.post(
         _GEMINI_URL.format(model=_GEMINI_MODEL),
@@ -170,11 +185,14 @@ def _parse_json(text: str) -> dict:
 
 
 _AMOUNT_RE = re.compile(r"([\d][\d,]*)\s*원")
-# 고지서 표는 금액 칸에 「원」 없이 「6,170」만 찍는 일이 흔하다 — 세 자리 쉼표가 있는 수는 금액으로 본다.
+# 고지서 표는 금액 칸에 「원」 없이 「6,170」만 찍는 일이 흔하다
+# — 세 자리 쉼표가 있는 수는 금액으로 본다.
 # 쉼표 없는 맨 숫자(납세번호·기관번호 2307207 등)는 금액으로 세지 않는다.
 _GROUPED_RE = re.compile(r"(?<![\d,])(\d{1,3}(?:,\d{3})+)(?![\d,])")
 # "2026.10.31" · "2026. 10. 31." · "2026년 10월 31일" — 공문은 점 뒤에 한 칸씩 띄우는 표기가 흔하다
-_DATE_RE_FULL = re.compile(r"(?<!\d)(\d{4})\s*(?:[.\-/]|년)\s*(\d{1,2})\s*(?:[.\-/]|월)\s*(\d{1,2})")
+_DATE_RE_FULL = re.compile(
+    r"(?<!\d)(\d{4})\s*(?:[.\-/]|년)\s*(\d{1,2})\s*(?:[.\-/]|월)\s*(\d{1,2})"
+)
 _DATE_RE_MD = re.compile(r"(\d{1,2})월\s*(\d{1,2})일")  # "10월 31일" — 연도를 안 적는 공문이 흔함
 
 
@@ -196,7 +214,9 @@ def _to_iso(y: int, mo: int, d: int) -> str | None:
 _PAST_ROLLOVER_THRESHOLD_DAYS = 60  # 이보다 더 과거면 연도 없는 날짜를 다음 해로 본다(이슈 #13)
 
 
-def _resolve_month_day(mo: int, d: int, fallback_year: int, *, today: date | None = None) -> str | None:
+def _resolve_month_day(
+    mo: int, d: int, fallback_year: int, *, today: date | None = None
+) -> str | None:
     """fallback_year 로 계산한 날짜가 오늘보다 크게 과거면 다음 해로 올린다.
 
     "1월 10일까지"처럼 연도 없는 날짜가 12월에 들어오면 fallback_year(기본값: 올해) 기준으로
@@ -217,7 +237,10 @@ def _resolve_month_day(mo: int, d: int, fallback_year: int, *, today: date | Non
 
 
 def _dates(text: str, *, fallback_year: int):
-    """본문의 날짜를 "YYYY.MM.DD" 형식부터, 다음 "MM월 DD일" 형식 순서로 ISO 로 낸다(달력에 없으면 None)."""
+    """본문의 날짜를 "YYYY.MM.DD" 형식부터, 다음 "MM월 DD일" 형식 순서로 ISO 로 낸다.
+
+    달력에 없는 날짜는 None 이다.
+    """
     for y, mo, d in _DATE_RE_FULL.findall(text):
         yield _to_iso(int(y), int(mo), int(d))
     # 연도가 있는 날짜는 지우고 찾는다 — 안 지우면 "2027년 1월 15일" 의 "1월 15일" 에 올해가 붙는다
@@ -279,7 +302,9 @@ def _to_bbox(item: dict) -> list[float] | None:
     return [x, y, w, h]
 
 
-def _double_check(document_text: str, items: list[dict], *, fallback_year: int | None = None) -> list[Mark]:
+def _double_check(
+    document_text: str, items: list[dict], *, fallback_year: int | None = None
+) -> list[Mark]:
     """money/deadline 항목을 document_text 본문과 교차 대조한다.
 
     고지서의 금액·기한은 놓치면 손해로 이어지는 민감 필드라, LLM이 함께 돌려준

@@ -3,7 +3,6 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
-
 from fastapi.testclient import TestClient
 
 from app import main
@@ -68,7 +67,14 @@ def test_share_returns_expiry_about_30_days_later():
 
 
 def test_share_rejects_oversized_body():
-    body = {"doc_type": "고지서", "title": "가" * 70_000, "plain": [], "marks": [], "todos": [], "basis": []}
+    body = {
+        "doc_type": "고지서",
+        "title": "가" * 70_000,
+        "plain": [],
+        "marks": [],
+        "todos": [],
+        "basis": [],
+    }
     assert client.post("/share", json=body).status_code == 413
 
 
@@ -82,7 +88,14 @@ def test_pages_revalidate():
         assert client.get(path).headers.get("cache-control") == "no-cache", path
 
 
-@pytest.mark.parametrize("error", [FileNotFoundError(), subprocess.CalledProcessError(1, "git"), subprocess.TimeoutExpired("git", 2)])
+@pytest.mark.parametrize(
+    "error",
+    [
+        FileNotFoundError(),
+        subprocess.CalledProcessError(1, "git"),
+        subprocess.TimeoutExpired("git", 2),
+    ],
+)
 def test_commit_lookup_failure_is_unknown(monkeypatch, error):
     def fail(*args, **kwargs):
         raise error

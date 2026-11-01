@@ -1,8 +1,7 @@
 import importlib
 import sqlite3
-from concurrent.futures import ThreadPoolExecutor
-
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from app import share
 from app.schema import Decoded
@@ -83,7 +82,9 @@ def test_expired_entries_are_cleaned_before_capacity_eviction(monkeypatch):
 def test_only_decoded_json_is_stored(tmp_path):
     share_id = create_share(_decoded())
     with sqlite3.connect(tmp_path / "share.db") as db:
-        body, expires, created = db.execute("SELECT body, expires_at, created_at FROM shares WHERE id = ?", (share_id,)).fetchone()
+        body, expires, created = db.execute(
+            "SELECT body, expires_at, created_at FROM shares WHERE id = ?", (share_id,)
+        ).fetchone()
     assert body == _decoded().model_dump_json()
     assert expires - created == share.DEFAULT_TTL_SECONDS
 

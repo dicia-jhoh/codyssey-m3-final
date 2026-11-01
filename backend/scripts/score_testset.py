@@ -76,7 +76,9 @@ def score_one(label: dict, result: Decoded | None) -> ImageScore:
     expected_todos = label.get("todos", [])  # [{"due": ..., "amount": ...}, ...]
 
     if result is None:
-        score.total = len(expected_money) + len(expected_dates) + len(expected_docs) + len(expected_todos)
+        score.total = (
+            len(expected_money) + len(expected_dates) + len(expected_docs) + len(expected_todos)
+        )
         score.details.append("추출 실패(샘플 모드) 또는 이미지 없음 — 전부 오답 처리")
         return score
 

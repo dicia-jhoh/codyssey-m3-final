@@ -65,7 +65,7 @@ def add_article(*, law_name: str, article_no: str, quote: str, claim: str) -> No
 
 
 def _format_law(law_name: str, article_no: str) -> str:
-    """"80의2" → "제80조의2", "80" → "제80조". article_no에 "의"가 섞여 있으면
+    """ "80의2" → "제80조의2", "80" → "제80조". article_no에 "의"가 섞여 있으면
     조 번호와 분리해서 올바른 위치에 "조"를 끼워 넣는다."""
     if "의" in article_no:
         main, sub = article_no.split("의", 1)
@@ -103,10 +103,14 @@ def find_basis(text: str) -> list[Basis]:
         results: list[Basis] = []
         for law_name, article_no in _citations(text):
             hit = collection.get(
-                where={"$and": [{"law_name": {"$eq": law_name}}, {"article_no": {"$eq": article_no}}]}
+                where={
+                    "$and": [{"law_name": {"$eq": law_name}}, {"article_no": {"$eq": article_no}}]
+                }
             )
             for doc, meta in zip(hit["documents"], hit["metadatas"], strict=True):
-                results.append(Basis(claim=meta["claim"], quote=doc, law=_format_law(law_name, article_no)))
+                results.append(
+                    Basis(claim=meta["claim"], quote=doc, law=_format_law(law_name, article_no))
+                )
 
         return results
     except Exception:
