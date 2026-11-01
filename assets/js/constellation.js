@@ -8,6 +8,9 @@
 
   const COLORS = ["#8052ff", "#ffb829", "#1fbf9c", "#ff4fa3", "#3d8bff", "#ff8a3d"];
   const N = COLORS.length; // 덩어리 수 = 팀원 수(content/site.js 의 team)
+  const WIDE = 900; // 이보다 넓은 화면은 구름을 오른쪽에 크게 둔다
+  const PUSH_RADIUS2 = 14000; // 포인터 둘레(px²) 안의 조각은 밀려난다
+  const PUSH_DISTANCE = 26;
 
   let W = 0, H = 0, DPR = 1;
   let cx = 0, cy = 0, R = 0;
@@ -33,14 +36,14 @@
     canvas.style.height = H + "px";
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-    const wide = W > 900;
+    const wide = W > WIDE;
     cx = wide ? W * 0.68 : W * 0.5;
     cy = wide ? H * 0.5 : H * 0.42;
     R = Math.min(wide ? W * 0.26 : W * 0.46, H * 0.4);
   }
 
   function seed() {
-    const n = W > 900 ? 2600 : 1300;
+    const n = W > WIDE ? 2600 : 1300;
     // 여섯 덩어리 — 뇌처럼 가운데로 겹쳐 모인다
     const lobes = [...Array(N)].map((_, i) => {
       const a = -Math.PI / 2 + (i * 2 * Math.PI) / N + 0.3;
@@ -65,7 +68,7 @@
         amp: 0.006 + Math.random() * 0.014,
       });
     }
-    ambient = [...Array(W > 900 ? 90 : 40)].map(() => ({
+    ambient = [...Array(W > WIDE ? 90 : 40)].map(() => ({
       x: Math.random() * W,
       y: Math.random() * H * 1.2,
       size: 1.5 + Math.random() * 2.5,
@@ -75,32 +78,36 @@
     }));
   }
 
-  function tri(x, y, s, r) {
+  // ctx 와 Path2D 둘 다 moveTo·lineTo·closePath 를 가진다 — 같은 함수로 그린다
+  function triangle(path, x, y, size, rotation) {
     for (let j = 0; j < 3; j++) {
-      const a = r + (j * 2 * Math.PI) / 3;
-      const px = x + Math.cos(a) * s;
-      const py = y + Math.sin(a) * s;
-      j ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      const a = rotation + (j * 2 * Math.PI) / 3;
+      const px = x + Math.cos(a) * size;
+      const py = y + Math.sin(a) * size;
+      j ? path.lineTo(px, py) : path.moveTo(px, py);
     }
-    ctx.closePath();
+    path.closePath();
   }
 
-  let t0 = performance.now();
+  const t0 = performance.now();
 
   function frame(now) {
     const t = (now - t0) / 1000;
-    const team = window.skyTeam || [];
-    const hi = typeof window.skyHighlight === "number" ? window.skyHighlight : -1;
-
     // 스크롤하면 구름이 위로 빠지며 옅어진다 — 아래 섹션 글을 가리지 않게
     const scroll = window.scrollY;
     const fade = Math.max(0, 1 - scroll / (H * 0.9));
-    const oy = -scroll * 0.35;
 
     ctx.clearRect(0, 0, W, H);
     ctx.lineWidth = 1;
+    drawAmbient();
+    if (fade > 0.01) drawCloud(t, fade, -scroll * 0.35);
+    ctx.globalAlpha = 1;
 
-    // 배경에 떠다니는 조각 — 스크롤과 무관하게 얕게 깔린다
+    if (!reduce) requestAnimationFrame(frame);
+  }
+
+  // 배경에 떠다니는 조각 — 스크롤과 무관하게 얕게 깔린다
+  function drawAmbient() {
     ctx.globalAlpha = 0.28;
     for (const a of ambient) {
       if (!reduce) {
@@ -110,70 +117,62 @@
       }
       ctx.strokeStyle = a.c;
       ctx.beginPath();
-      tri(a.x, a.y, a.size, a.rot);
+      triangle(ctx, a.x, a.y, a.size, a.rot);
       ctx.stroke();
     }
+  }
 
-    if (fade > 0.01) {
-      const ease = reduce ? 1 : Math.min(1, t / 2.4);
-      const k = 1 - Math.pow(1 - ease, 3); // 모여드는 한 번의 순간
-      // 구름 전체가 아주 천천히 돈다(한 바퀴 약 3분)
-      const swirl = reduce ? 0 : t * 0.035;
-      const cs = Math.cos(swirl), sn = Math.sin(swirl);
+  function drawCloud(t, fade, oy) {
+    const team = window.skyTeam || [];
+    const hi = typeof window.skyHighlight === "number" ? window.skyHighlight : -1;
+    const ease = reduce ? 1 : Math.min(1, t / 2.4);
+    const k = 1 - Math.pow(1 - ease, 3); // 모여드는 한 번의 순간
+    // 구름 전체가 아주 천천히 돈다(한 바퀴 약 3분)
+    const swirl = reduce ? 0 : t * 0.035;
+    const cs = Math.cos(swirl), sn = Math.sin(swirl);
 
-      // 색별로 경로를 한 번에 그려 stroke 호출을 줄인다
-      const paths = COLORS.map(() => new Path2D());
-      const dimPaths = COLORS.map(() => new Path2D());
-      const hiPaths = COLORS.map(() => new Path2D());
+    // 색별로 경로를 한 번에 그려 stroke 호출을 줄인다
+    const paths = COLORS.map(() => new Path2D());
+    const dimPaths = COLORS.map(() => new Path2D());
+    const hiPaths = COLORS.map(() => new Path2D());
 
-      for (const p of parts) {
-        const breathe = reduce ? 0 : Math.sin(t * 0.8 + p.phase) * p.amp;
-        const bx = p.hx * (1 + breathe), by = p.hy * (1 + breathe);
-        const hx = bx * cs - by * sn;
-        const hy = (bx * sn + by * cs) * 0.82; // 가로로 약간 긴 타원
-        const nx = p.x + (hx - p.x) * k;
-        const ny = p.y + (hy - p.y) * k;
-        let x = cx + nx * R;
-        let y = cy + ny * R + oy;
+    for (const p of parts) {
+      const breathe = reduce ? 0 : Math.sin(t * 0.8 + p.phase) * p.amp;
+      const bx = p.hx * (1 + breathe), by = p.hy * (1 + breathe);
+      const hx = bx * cs - by * sn;
+      const hy = (bx * sn + by * cs) * 0.82; // 가로로 약간 긴 타원
+      const nx = p.x + (hx - p.x) * k;
+      const ny = p.y + (hy - p.y) * k;
+      let x = cx + nx * R;
+      let y = cy + ny * R + oy;
 
-        // 포인터 가까이의 조각은 밀려난다
-        const dx = x - pointer.x, dy = y - pointer.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < 14000) {
-          const push = (1 - d2 / 14000) * 26;
-          const d = Math.sqrt(d2) || 1;
-          x += (dx / d) * push;
-          y += (dy / d) * push;
-        }
-
-        if (!reduce) p.rot += p.spin;
-        const lit = team[p.m] ? team[p.m].filled : false;
-        const path = hi === p.m ? hiPaths[p.m] : lit ? paths[p.m] : dimPaths[p.m];
-        const a = p.rot;
-        for (let j = 0; j < 3; j++) {
-          const ang = a + (j * 2 * Math.PI) / 3;
-          const px = x + Math.cos(ang) * p.size;
-          const py = y + Math.sin(ang) * p.size;
-          j ? path.lineTo(px, py) : path.moveTo(px, py);
-        }
-        path.closePath();
+      // 포인터 가까이의 조각은 밀려난다
+      const dx = x - pointer.x, dy = y - pointer.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < PUSH_RADIUS2) {
+        const push = (1 - d2 / PUSH_RADIUS2) * PUSH_DISTANCE;
+        const d = Math.sqrt(d2) || 1;
+        x += (dx / d) * push;
+        y += (dy / d) * push;
       }
 
-      // 빈 자리도 제 색을 옅게 띤다 — 채우면 선명해진다. 누군가를 가리키면 나머지는 한 발 물러난다
-      const dimmed = hi >= 0 ? 0.3 : 1;
-      COLORS.forEach((c, i) => {
-        ctx.strokeStyle = c;
-        ctx.globalAlpha = 0.38 * fade * dimmed;
-        ctx.stroke(dimPaths[i]);
-        ctx.globalAlpha = 0.95 * fade * dimmed;
-        ctx.stroke(paths[i]);
-        ctx.globalAlpha = fade;
-        ctx.stroke(hiPaths[i]);
-      });
+      if (!reduce) p.rot += p.spin;
+      const lit = team[p.m] ? team[p.m].filled : false;
+      const path = hi === p.m ? hiPaths[p.m] : lit ? paths[p.m] : dimPaths[p.m];
+      triangle(path, x, y, p.size, p.rot);
     }
-    ctx.globalAlpha = 1;
 
-    if (!reduce) requestAnimationFrame(frame);
+    // 빈 자리도 제 색을 옅게 띤다 — 채우면 선명해진다. 누군가를 가리키면 나머지는 한 발 물러난다
+    const dimmed = hi >= 0 ? 0.3 : 1;
+    COLORS.forEach((c, i) => {
+      ctx.strokeStyle = c;
+      ctx.globalAlpha = 0.38 * fade * dimmed;
+      ctx.stroke(dimPaths[i]);
+      ctx.globalAlpha = 0.95 * fade * dimmed;
+      ctx.stroke(paths[i]);
+      ctx.globalAlpha = fade;
+      ctx.stroke(hiPaths[i]);
+    });
   }
 
   addEventListener("pointermove", (e) => {
