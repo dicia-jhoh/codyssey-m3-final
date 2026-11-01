@@ -120,7 +120,7 @@
   function afterScene(intent) {
     const hero = SITE.hero || {};
     const card = hero.todo || {};
-    const attach = ((hero.doc || {}).attach || [""])[0].replace(/\(.*\)/, "");
+    const attach = (((hero.doc || {}).attach || [])[0] || "").replace(/\(.*\)/, "");
     const penText = [card.amount, card.due, `${attach} 챙기기`];
     return el("figure", { class: "scene" },
       picture((intent.scenes || {}).after),
