@@ -16,7 +16,7 @@
 
 의존성(chromadb 포함)을 새 가상환경에 설치한 데스크톱 실측은 `.venv` 약 520MB, 설치 시간 약 21초다
 (2026-10-18, [리뷰 이슈 #43](https://github.com/dicia-jhoh/codyssey-m3-final/issues/43)에 보고된 값).
-OCI 서버(mc-osaka-1)의 설치 시간과 사용량은 아직 실측하지 않았다. CPU·네트워크·패키지 버전에 따라 달라질 수 있다.
+OCI 서버(mc-osaka-1, 2코어)에서 새 가상환경에 설치하면 약 37초, `.venv` 약 508MB 다(2026-11-01 실측). 법령 Chroma(`data/legal/chroma/`)는 조문 10개로 약 300KB 다.
 
 서버에 저장소를 받고 백엔드를 설치한 뒤, 서비스 파일을 등록한다.
 
