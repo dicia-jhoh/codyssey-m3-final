@@ -120,6 +120,17 @@ test 자료를 5번과 6번에 더해 보았다. 금후에 계속해서 관련�
 지방세법 PDF 에서 「납기」로 찾아 골랐고, `quote` 는 3호를 통째로 옮겼다. law.go.kr 조문 주소의
 원문과 대조했다(`python -m scripts.verify_legal_articles` → `[OK] 지방세법 제115조`).
 
+## 조문 추가 절차
+
+1. law.go.kr 에서 원문을 확인한다 — 조문 주소는 `https://www.law.go.kr/법령/<법령명>/제<N>조`
+2. `articles.jsonl` 에 한 줄 추가한다(위 「형식」)
+3. **대조를 돌린다** — 전부 `[OK]` 여야 한다. `[FAIL]` 이면 quote 를 원문대로 고친다
+   ```bash
+   cd backend
+   python -m scripts.verify_legal_articles
+   ```
+4. 적재한다 — `python -m scripts.load_legal_articles`
+
 ## 다음 할 일 (김기훈 담당)
 
 기획서 범위(초중등교육법 등 고지서가 자주 인용하는 법)로 조문을 더 모은다. 숫자
