@@ -1,6 +1,5 @@
 // content/ 의 데이터를 페이지에 꽂는다. 빈 칸은 숨기지 않고 "어느 파일의 어느 칸" 인지 보여 준다 —
-// 팀원이 페이지만 보고도 자기가 채울 곳을 찾게 하려는 것.
-// example: true 인 값(아직 재지 않은 측정값·피드백)에는 「예시」 표시를 붙인다 — 실제 값을 넣으면 사라진다.
+// 팀원이 페이지만 보고도 자기가 채울 곳을 찾게 하려는 것. 숫자는 잰 값만 넣는다(content/site.js).
 (function () {
   const SITE = window.SITE || {};
   const MEMBERS = window.MEMBERS || {};
@@ -8,13 +7,12 @@
   const LEAD = "juhyeon"; // 팀장 — 팀 칸에 「· 팀장」을 붙인다
   const MEMBER_COLORS = 6; // assets/css 의 --m0..--m5, constellation.js 의 COLORS 와 같은 수
   const MIN_TECH = 2; // 필수 기술 요소 최소 개수(미션 요건)
-  const MIN_FEEDBACK_ROWS = 5; // 실사용자 다섯 명 칸은 비어 있어도 보인다
 
   const TECH = [
-    ["agent", "AI Agent", "판별 → 추출 → 근거 → 답장을 스스로 계획하고 알림 도구를 부른다"],
-    ["rag", "RAG", "국가법령정보·정부24 안내를 찾아 풀이의 근거로 붙인다"],
-    ["multimodal", "멀티모달", "구겨진 사진 속 표·도장·뒷면까지 읽고 좌표를 뽑는다"],
-    ["workflow", "자동화 워크플로우", "n8n 이 기한 D-3·D-day 알림을 보낸다"],
+    ["agent", "AI Agent", "추출 → 가림 → 근거 → 판별 → 할 일을 차례로 부르고, 과태료면 답장 초안을 쓴다"],
+    ["rag", "RAG", "고지서가 인용한 조문 번호로 법제처 원문 10개 중에서 찾아 근거로 붙인다"],
+    ["multimodal", "멀티모달", "사진 속 표·도장·뒷면까지 읽고 금액·기한·서류의 좌표를 뽑는다"],
+    ["workflow", "자동화 워크플로우", "기한 사흘 전·당일 알림 일정을 만들어 n8n 웹훅으로 넘긴다"],
     ["memory", "Long-term Memory", "쓰지 않는다 — 고지서는 개인정보라 저장할수록 위험하다"],
   ];
 
@@ -63,8 +61,6 @@
 
   // 빈 칸 표시 — 무엇을 어디에 적으면 되는지
   const todo = (what, where) => el("span", { class: "todo" }, what, el("code", {}, where));
-  const example = (on) =>
-    on ? el("span", { class: "example", title: "실제 값으로 바꿀 자리" }, "예시") : null;
   const picture = (scene, cls) =>
     scene && scene.src
       ? el("img", { class: cls, src: scene.src, alt: scene.alt || "", loading: "lazy", width: "960", height: "720" })
@@ -198,12 +194,13 @@
         (m.prs || []).length ? el("p", { class: "member-prs" }, `PR ${m.prs.length}건`) : null)));
   }
 
+  // 걸어온 길 — 날짜는 머지된 PR 의 날짜다
   function renderSchedule() {
-    fill("schedule", ...(SITE.schedule || []).map((w, i, all) =>
-      el("li", { class: i === all.length - 1 ? "is-done" : "" },
-        el("span", { class: "del-state" }, `${w.week}주`),
-        el("span", { class: "del-head" }, w.goal),
-        el("span", { class: "del-desc" }, w.who))));
+    fill("schedule", ...(SITE.schedule || []).map((step) =>
+      el("li", { class: "is-done" },
+        el("span", { class: "del-state" }, step.date),
+        el("span", { class: "del-head" }, step.what),
+        el("span", { class: "del-desc" }, step.who))));
   }
 
   // 기대효과·활용방안·성공 기준
@@ -216,7 +213,7 @@
         el("span", { class: "del-state" }, c.name),
         el("span", { class: "del-head goal" }, c.goal),
         el("span", { class: "del-desc" }, c.how,
-          el("span", { class: "now" }, "지금 ", el("strong", {}, c.now || "측정 전"), example(c.example))))));
+          el("span", { class: "now" }, "잰 값 ", el("strong", {}, c.now))))));
   }
 
   function renderDeliverables() {
@@ -229,18 +226,11 @@
   }
 
   function renderFeedback() {
-    const feedback = SITE.feedback || [];
-    const rows = [];
-    for (let i = 0; i < Math.max(MIN_FEEDBACK_ROWS, feedback.length); i++) {
-      const f = feedback[i];
-      rows.push(f
-        ? el("li", { class: "fb" },
-            el("span", { class: "fb-who" }, f.who, example(f.example)),
-            el("span", {}, `“${f.said}”`),
-            el("span", { class: "fb-changed" }, f.changed ? `반영: ${f.changed}` : "반영 전"))
-        : el("li", { class: "fb is-empty" }, el("span", { class: "fb-who" }, `사용자 ${i + 1}`), el("span", {}, "아직 받지 않음")));
-    }
-    fill("feedback", ...rows);
+    fill("feedback", ...(SITE.feedback || []).map((f) =>
+      el("li", { class: "fb" },
+        el("span", { class: "fb-who" }, f.who),
+        el("span", {}, f.saw),
+        el("span", { class: "fb-changed" }, `고침: ${f.changed}`))));
   }
 
   function renderLinks() {
