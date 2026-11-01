@@ -103,7 +103,15 @@ function saveCompletedTodos() {
 // ── 가족과 함께 보는 「다 했어요」 — 공유한 카드는 서버의 기록을 같이 쓴다 ──
 // 어르신이 누르면 서버에 적고, 같은 링크를 연 자녀 화면은 SYNC_SECONDS 마다 읽어 완료로 바꾼다.
 
-const SHARE_LINKS_KEY = "shareLinks"; // {문서 제목: 공유 id} — 내가 보낸 링크
+const SHARE_LINKS_KEY = "shareLinks"; // {고지서 지문: 공유 id} — 내가 보낸 링크
+const SHARE_LINKS_KEEP = 20; // 오래된 링크 기록은 버린다(링크도 30일이면 사라진다)
+const unsynced = new Map(); // 할 일 키 → {id, done} — 서버가 아직 받지 못한 「다 했어요」
+const keptLocal = new Set(); // 서버가 받지 않는 키(링크 만료·한도) — 내 화면 기록을 지킨다
+
+// 제목은 매달 같을 수 있다(기관 이름) — 할 일(제목·기한·금액)까지 묶어 고지서를 가른다
+function billFingerprint(decoded) {
+  return JSON.stringify([decoded.title, decoded.todos.map((t) => [t.title, t.due || "", t.amount ?? null])]);
+}
 
 function readShareLinks() {
   try {
@@ -115,12 +123,15 @@ function readShareLinks() {
 
 function rememberShareLink(decoded, id) {
   const links = readShareLinks();
-  links[decoded.title] = id;
-  store(SHARE_LINKS_KEY, JSON.stringify(links));
+  const fingerprint = billFingerprint(decoded);
+  delete links[fingerprint]; // 다시 넣어 가장 새 기록으로
+  links[fingerprint] = id;
+  const kept = Object.entries(links).slice(-SHARE_LINKS_KEEP);
+  store(SHARE_LINKS_KEY, JSON.stringify(Object.fromEntries(kept)));
 }
 
 function linkedShareId(decoded) {
-  return sharedId || readShareLinks()[decoded.title] || null;
+  return sharedId || readShareLinks()[billFingerprint(decoded)] || null;
 }
 
 function doneUrl(id) {
@@ -129,16 +140,27 @@ function doneUrl(id) {
 
 async function sendDone(decoded, key, done) {
   const id = linkedShareId(decoded);
-  if (!id) return;
+  if (id) await putDone(id, key, done);
+}
+
+// 보내기 전에 unsynced 에 적는다 — 그 사이 도착한 서버 목록이 방금 누른 것을 지우지 않게
+async function putDone(id, key, done) {
+  unsynced.set(key, { id, done });
   try {
-    await fetch(doneUrl(id), {
+    const response = await fetch(doneUrl(id), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key, done }),
     });
+    if (response.ok || response.status === 404 || response.status === 413) unsynced.delete(key);
+    if (!response.ok) keptLocal.add(key);
   } catch (err) {
-    console.error(err); // 내 화면 기록은 이미 남았다 — 다음에 누를 때 다시 보낸다
+    console.error(err); // 연결이 끊겼다 — refreshDone 이 다시 보낸다
   }
+}
+
+async function resendUnsynced() {
+  for (const [key, { id, done }] of [...unsynced]) await putDone(id, key, done);
 }
 
 // 서버 기록을 내 기록에 맞춘다. 바뀐 것이 있으면 true
@@ -151,6 +173,7 @@ async function pullDone(decoded) {
   let changed = false;
   for (const todo of decoded.todos) {
     const key = todoKey(decoded, todo);
+    if (unsynced.has(key) || keptLocal.has(key)) continue; // 서버에 아직 없는 내 기록이 이긴다
     if (remote.has(key) === completedTodos.has(key)) continue;
     if (remote.has(key)) completedTodos.add(key);
     else completedTodos.delete(key);
@@ -163,6 +186,7 @@ async function pullDone(decoded) {
 async function refreshDone() {
   if (!currentDecoded || document.hidden) return;
   try {
+    await resendUnsynced();
     if (await pullDone(currentDecoded)) renderTodos(currentDecoded);
   } catch (err) {
     console.error(err);
@@ -365,7 +389,7 @@ function show(decoded) {
   $("title").textContent = decoded.title;
   $("marks").replaceChildren(...decoded.marks.map(markBox));
   renderTodos(decoded);
-  renderAlerts(decoded.alerts || []);
+  renderAlerts(decoded);
   $("basis").replaceChildren(...basisItems(decoded.basis));
   showReply(decoded);
   $("shareResult").textContent = "";
@@ -489,7 +513,10 @@ function doneButton(li, decoded, key) {
 }
 
 // 기한 사흘 전·당일 알림 — 카카오톡 말풍선 모양 미리보기(가상 발송, notify.py)
-function renderAlerts(alerts) {
+// 지난 날짜의 알림은 뺀다 — 공유 링크는 해독한 날의 알림을 그대로 담고 있다
+function renderAlerts(decoded) {
+  const today = displayToday(decoded);
+  const alerts = (decoded.alerts || []).filter((alert) => parseLocalDate(alert.send_on) >= today);
   $("alertSection").hidden = !alerts.length;
   $("alerts").replaceChildren(...alerts.map((alert) => {
     const li = document.createElement("li");
