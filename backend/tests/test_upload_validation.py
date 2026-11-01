@@ -94,12 +94,19 @@ def test_acceptable_headers_still_decode(monkeypatch, length):
     assert response.status_code == 200
 
 
-def test_other_routes_ignore_decode_upload_limit():
+def test_share_routes_have_their_own_small_limit_before_parsing():
+    """공유 두 경로도 JSON 을 다 읽기 전에 막는다 — 인증 없는 공개 주소라서."""
     with TestClient(main.app) as client:
-        response = client.post(
-            "/share", json=SAMPLE.model_dump(), headers={"content-length": str(main.MAX_BYTES * 2)}
+        assert client.post("/share", json=SAMPLE.model_dump()).status_code == 200
+        huge = {"content-length": str(main.MAX_SHARE_BYTES + 1)}
+        shared = client.post("/share", json=SAMPLE.model_dump(), headers=huge)
+        done = client.put(
+            "/share/x/done",
+            content=b"{" + b" " * main.MAX_DONE_BODY_BYTES + b"}",
+            headers={"content-type": "application/json"},
         )
-    assert response.status_code == 200
+    assert shared.status_code == 413
+    assert done.status_code == 413
 
 
 def test_chunked_upload_without_length_stops_at_limit(monkeypatch):
@@ -143,6 +150,6 @@ def test_chunked_upload_without_length_stops_at_limit(monkeypatch):
         }
         await main.app(scope, receive, send)
         assert sent[0]["status"] == 413
-        assert reads <= main.LimitDecodeUpload.LIMIT // len(chunk) + 2
+        assert reads <= main.LimitRequestBody.DECODE_LIMIT // len(chunk) + 2
 
     asyncio.run(scenario())

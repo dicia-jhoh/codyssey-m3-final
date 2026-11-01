@@ -24,6 +24,7 @@ MULTIPART_OVERHEAD = 64 * 1024  # multipart 경계·파일명 등 파일 외 메
 MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
 SHARE_GONE = "링크가 만료됐거나 없는 공유예요"
 MAX_TODO_KEY_CHARS = 500  # 할 일 키 = [문서 제목, 할 일 제목, 기한, 금액] JSON — 몇십 자다
+MAX_DONE_BODY_BYTES = 2048  # {"key": 할 일 키, "done": true} 한 건 — 키 500자를 넉넉히 담는다
 TOO_LARGE = f"사진이 너무 커요({MAX_BYTES // (1024 * 1024)}MB 이하)"
 DECODE_PER_MINUTE = max(1, int(os.environ.get("DECODE_PER_MINUTE", "10")))
 DECODE_WINDOW_SECONDS = 60  # DECODE_PER_MINUTE 를 세는 창
@@ -51,25 +52,39 @@ COMMIT = _read_commit()  # 서버 시작 때 한 번만 읽는다
 app = FastAPI(title="또박또박 API", description="고지서 사진 → 할 일·근거")
 
 
-class LimitDecodeUpload:
-    """/decode 본문을 받으면서 센다 — 넘으면 그 자리에서 413.
+class LimitRequestBody:
+    """인증 없는 쓰기 경로의 본문을 받으면서 센다 — 넘으면 그 자리에서 413.
 
-    Content-Length 만 보면 그 헤더가 없는 청크 전송은 그대로 통과해, multipart 파서가
-    끝없이 임시 파일에 받아 적는다(OCR 리뷰). 헤더가 크면 본문을 읽기 전에 거절하고,
-    헤더가 없거나 거짓이면 받은 바이트를 세다가 넘는 순간 멈춘다.
+    Content-Length 만 보면 그 헤더가 없는 청크 전송은 그대로 통과해, 파서가 끝없이 받아
+    적는다(OCR 리뷰). 헤더가 크면 본문을 읽기 전에 거절하고, 헤더가 없거나 거짓이면 받은
+    바이트를 세다가 넘는 순간 멈춘다. 공유 두 경로도 JSON 을 다 읽은 뒤가 아니라 여기서 막는다.
     """
 
-    LIMIT = MAX_BYTES + MULTIPART_OVERHEAD
+    DECODE_LIMIT = MAX_BYTES + MULTIPART_OVERHEAD
 
     def __init__(self, app):
         self.app = app
 
+    @classmethod
+    def limit_for(cls, scope) -> tuple[int, str] | None:
+        """(한도 바이트, 413 문구). 세지 않는 요청이면 None."""
+        method, path = scope["method"], scope["path"]
+        if method == "POST" and path == "/decode":
+            return cls.DECODE_LIMIT, TOO_LARGE
+        if method == "POST" and path == "/share":
+            return MAX_SHARE_BYTES, "공유할 내용이 너무 커요"
+        if method == "PUT" and path.startswith("/share/") and path.endswith("/done"):
+            return MAX_DONE_BODY_BYTES, "보낸 내용이 너무 커요"
+        return None
+
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"] != "/decode":
+        rule = self.limit_for(scope) if scope["type"] == "http" else None
+        if rule is None:
             return await self.app(scope, receive, send)
+        limit, message = rule
         length = dict(scope["headers"]).get(b"content-length", b"")
-        if length.isdigit() and int(length) > self.LIMIT:
-            return await self._too_large(scope, receive, send)
+        if length.isdigit() and int(length) > limit:
+            return await self._too_large(message, scope, receive, send)
         received = 0
         exceeded = False
 
@@ -78,7 +93,7 @@ class LimitDecodeUpload:
             message = await receive()
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
-                if received > self.LIMIT:
+                if received > limit:
                     exceeded = True
                     # 더 받지 않게 본문을 여기서 끝낸다 — 파서는 잘린 본문으로 실패한다
                     return {"type": "http.request", "body": b"", "more_body": False}
@@ -95,14 +110,14 @@ class LimitDecodeUpload:
 
         await self.app(scope, counted, guarded)
         if exceeded and not started:
-            await self._too_large(scope, receive, send)
+            await self._too_large(message, scope, receive, send)
 
     @staticmethod
-    async def _too_large(scope, receive, send):
-        await JSONResponse({"detail": TOO_LARGE}, status_code=413)(scope, receive, send)
+    async def _too_large(message, scope, receive, send):
+        await JSONResponse({"detail": message}, status_code=413)(scope, receive, send)
 
 
-app.add_middleware(LimitDecodeUpload)
+app.add_middleware(LimitRequestBody)
 
 
 @app.middleware("http")
@@ -210,6 +225,8 @@ def put_shared_done(share_id: str, change: DoneChange) -> dict:
     """어르신이 누른 「다 했어요」를 기록한다 — 자녀 화면이 다음에 읽을 때 완료로 보인다."""
     try:
         keys = mark_done(share_id, change.key, done=change.done)
+    except KeyError:
+        raise HTTPException(400, "이 공유에 없는 할 일이에요") from None
     except ValueError:
         raise HTTPException(413, "할 일 기록이 너무 많아요") from None
     if keys is None:

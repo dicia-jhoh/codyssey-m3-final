@@ -21,9 +21,11 @@ PAY_HOW = "은행 또는 앱 납부"
 
 # 과태료를 매기는 문서의 표지 — 「…하면 과태료가 부과됩니다」 같은 안내 한 줄과 가른다
 _FINE_NOTICE_RE = re.compile(r"과태료\s*(?:부과\s*)?(?:고지|사전\s*통지)|과태료\s*금액|의견\s*제출")
+# 의견을 낼 수 있는 단계(사전통지·의견 제출 안내)의 표지
+# — 부과가 끝난 징수 고지에는 초안을 쓰지 않는다
+_ADVANCE_NOTICE_RE = re.compile(r"사전\s*통지|의견\s*제출")
 # 앞에 있는 낱말이 이긴다
 _KIND_WORDS = [("납부", "고지서"), ("가정통신", "가정통신문"), ("신청", "신청서")]
-REPLY_KINDS = ("신청서", "과태료")  # 보낼 글이 필요한 문서
 
 
 def classify(text: str) -> str:
@@ -110,11 +112,13 @@ def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:
         for money in marks
         if money.kind == "money"
     ]
-    money_dues = {t.due for t in todos}
+    # 짝지은 기한과 글자까지 같은 기한은 같은 날짜를 한 번 더 읽은 것이다
+    # — 다른 일(의견 제출 기한 등)은 남긴다
+    paired_text = {(deadline_marks[i].text, deadline_marks[i].value) for i in paired}
     todos += [
         Todo(title=_title_for(doc_type, has_money=False), due=d.value, amount=None, how=_how(prep))
         for i, d in enumerate(deadline_marks)
-        if i not in paired and d.value not in money_dues  # 그 날짜는 이미 돈 카드에 있다
+        if i not in paired and (d.text, d.value) not in paired_text
     ]
     # 고지서는 같은 금액을 표·본문·납부서에 여러 번 찍는다 — 같은 카드는 한 장만
     unique: dict[tuple, Todo] = {}
@@ -159,7 +163,7 @@ def decode(image: bytes) -> Decoded:
     basis = [b for b in rag.find_basis(text) if b.quote]  # 근거 없는 풀이는 버린다
     doc_type = classify(text)
     reply_draft = ""
-    if doc_type == "과태료":
+    if doc_type == "과태료" and _ADVANCE_NOTICE_RE.search(text):
         reply_draft = reply.draft_reply(text, api_key)
         basis += _reply_basis(basis)
     return Decoded(
@@ -169,7 +173,7 @@ def decode(image: bytes) -> Decoded:
         marks=marks,
         todos=_todos_from_marks(doc_type, marks),
         basis=basis,
-        reply_needed=doc_type in REPLY_KINDS,
+        reply_needed=doc_type == "신청서" or bool(reply_draft),
         reply_draft=reply_draft,
     )
 

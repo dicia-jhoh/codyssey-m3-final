@@ -2,16 +2,26 @@ import importlib
 import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 
 import pytest
 
 from app import share
-from app.schema import Decoded
+from app.schema import Decoded, Todo
 from app.share import create_share, get_share, share_expires_at
 
 
 def _decoded() -> Decoded:
     return Decoded(doc_type="고지서", title="t", plain=[], marks=[], todos=[], basis=[])
+
+
+def _with_todos(*titles: str) -> Decoded:
+    todos = [Todo(title=t, due="2099-01-01", amount=1000) for t in titles]
+    return _decoded().model_copy(update={"todos": todos})
+
+
+def _key(decoded: Decoded, i: int) -> str:
+    return share.key_of(decoded, decoded.todos[i])
 
 
 def test_create_and_get_share_round_trip():
@@ -107,36 +117,58 @@ def test_share_db_is_owner_only(tmp_path):
 
 
 def test_done_keys_are_shared_between_everyone_who_opens_the_link():
-    share_id = create_share(_decoded())
+    decoded = _with_todos("돈 내기")
+    share_id = create_share(decoded)
+    card = _key(decoded, 0)
+    assert card == '["t","돈 내기","2099-01-01",1000]'  # 화면 JSON.stringify 와 같은 모양
     assert share.done_keys(share_id) == []
-    assert share.mark_done(share_id, "카드1", done=True) == ["카드1"]
-    assert share.mark_done(share_id, "카드1", done=True) == ["카드1"]  # 두 번 눌러도 하나
-    assert share.done_keys(share_id) == ["카드1"]
-    assert share.mark_done(share_id, "카드1", done=False) == []
+    assert share.mark_done(share_id, card, done=True) == [card]
+    assert share.mark_done(share_id, card, done=True) == [card]  # 두 번 눌러도 하나
+    assert share.done_keys(share_id) == [card]
+    assert share.mark_done(share_id, card, done=False) == []
 
 
 def test_done_keys_of_unknown_or_expired_share_is_none(monkeypatch):
     assert share.done_keys("없는-아이디") is None
     assert share.mark_done("없는-아이디", "카드1", done=True) is None
     monkeypatch.setattr(share.time, "time", lambda: 100.0)
-    share_id = create_share(_decoded(), ttl_seconds=10)
-    share.mark_done(share_id, "카드1", done=True)
+    decoded = _with_todos("돈 내기")
+    share_id = create_share(decoded, ttl_seconds=10)
+    share.mark_done(share_id, _key(decoded, 0), done=True)
     monkeypatch.setattr(share.time, "time", lambda: 111.0)
     assert share.done_keys(share_id) is None
 
 
+def test_key_that_is_not_one_of_the_shared_todos_is_rejected():
+    share_id = create_share(_with_todos("돈 내기"))
+    with pytest.raises(KeyError):
+        share.mark_done(share_id, "아무 키", done=True)
+
+
 def test_done_keys_per_share_are_capped(monkeypatch):
     monkeypatch.setattr(share, "MAX_DONE_PER_SHARE", 2)
-    share_id = create_share(_decoded())
-    share.mark_done(share_id, "a", done=True)
-    share.mark_done(share_id, "b", done=True)
+    decoded = _with_todos("a", "b", "c")
+    share_id = create_share(decoded)
+    share.mark_done(share_id, _key(decoded, 0), done=True)
+    share.mark_done(share_id, _key(decoded, 1), done=True)
     with pytest.raises(ValueError):
-        share.mark_done(share_id, "c", done=True)
+        share.mark_done(share_id, _key(decoded, 2), done=True)
 
 
 def test_done_key_already_recorded_is_accepted_at_the_cap(monkeypatch):
     """한도가 찬 공유에 이미 적힌 키를 다시 보내도 413 이 아니다(공유할 때 다시 보낸다)."""
     monkeypatch.setattr(share, "MAX_DONE_PER_SHARE", 1)
-    share_id = create_share(_decoded())
-    share.mark_done(share_id, "a", done=True)
-    assert share.mark_done(share_id, "a", done=True) == ["a"]
+    decoded = _with_todos("a")
+    share_id = create_share(decoded)
+    share.mark_done(share_id, _key(decoded, 0), done=True)
+    assert share.mark_done(share_id, _key(decoded, 0), done=True) == [_key(decoded, 0)]
+
+
+def test_evicted_share_takes_its_done_keys_with_it(monkeypatch):
+    monkeypatch.setattr(share, "MAX_SHARES", 1)
+    decoded = _with_todos("a")
+    first = create_share(decoded)
+    share.mark_done(first, _key(decoded, 0), done=True)
+    create_share(decoded)  # 한도 1 — 첫 공유가 밀려난다
+    with closing(share._connect()) as db:
+        assert db.execute("SELECT COUNT(*) FROM share_done").fetchone()[0] == 0

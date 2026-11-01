@@ -224,3 +224,33 @@ def test_notice_that_only_warns_about_a_fine_is_not_a_fine_notice():
     assert classify(text) == "신청서"
     assert classify("주정차위반 과태료 부과 고지서\n과태료 금액 40,000원") == "과태료"
     assert classify("과태료 부과 사전통지서 및 의견제출 안내") == "과태료"
+
+
+def test_fine_collection_notice_without_advance_notice_gets_no_draft(monkeypatch):
+    """의견 제출 단계가 지난 과태료(징수) 고지서엔 의견 제출서 초안을 쓰지 않는다."""
+    from app import reply
+
+    monkeypatch.setenv("LLM_API_KEY", "dummy")
+    monkeypatch.setattr(
+        "app.agent.extract.extract",
+        lambda image, api_key: ("과태료 고지서\n과태료 금액 40,000원", []),
+    )
+    monkeypatch.setattr(reply, "_ask", lambda text, key: pytest.fail("초안을 쓰면 안 된다"))
+    result = decode(b"fake")
+    assert result.doc_type == "과태료"
+    assert result.reply_draft == "" and not result.reply_needed
+
+
+def test_unpaired_deadline_for_another_task_on_the_same_day_is_kept():
+    """같은 날짜라도 다른 글자의 기한(의견 제출 기한 등)은 카드로 남긴다."""
+    marks = [
+        Mark(kind="money", text="40,000원", value="40000", bbox=[0.1, 0.30, 0.2, 0.05]),
+        Mark(
+            kind="deadline", text="납부기한 11.26", value="2026-11-26", bbox=[0.1, 0.31, 0.2, 0.05]
+        ),
+        Mark(
+            kind="deadline", text="의견제출 11.26", value="2026-11-26", bbox=[0.1, 0.90, 0.2, 0.05]
+        ),
+    ]
+    titles = [t.title for t in _todos_from_marks("과태료", marks)]
+    assert titles == ["과태료 돈 내기", "과태료 내기"]
