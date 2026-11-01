@@ -9,6 +9,7 @@ const SLOW_SECONDS = 10; // 이보다 오래 걸리면 「조금만 더」를 �
 const SOON_DAYS = 3; // 오늘~사흘 남은 할 일은 눈에 띄게
 const DONE_KEEP_DAYS = 30; // 기한이 이만큼 지난 「다 했어요」 기록은 지운다
 const DAY_MS = 24 * 60 * 60 * 1000;
+const SYNC_SECONDS = 20; // 공유한 카드의 「다 했어요」를 이 간격으로 다시 읽는다
 const PEN_NAME = { money: "낼 돈", deadline: "기한", document: "챙길 서류" };
 
 let currentDecoded = null; // 「가족에게 보내기」가 보낼 최근 해독 결과
@@ -99,6 +100,77 @@ function saveCompletedTodos() {
   store(COMPLETED_KEY, JSON.stringify([...completedTodos]));
 }
 
+// ── 가족과 함께 보는 「다 했어요」 — 공유한 카드는 서버의 기록을 같이 쓴다 ──
+// 어르신이 누르면 서버에 적고, 같은 링크를 연 자녀 화면은 SYNC_SECONDS 마다 읽어 완료로 바꾼다.
+
+const SHARE_LINKS_KEY = "shareLinks"; // {문서 제목: 공유 id} — 내가 보낸 링크
+
+function readShareLinks() {
+  try {
+    return JSON.parse(readStored(SHARE_LINKS_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+function rememberShareLink(decoded, id) {
+  const links = readShareLinks();
+  links[decoded.title] = id;
+  store(SHARE_LINKS_KEY, JSON.stringify(links));
+}
+
+function linkedShareId(decoded) {
+  return sharedId || readShareLinks()[decoded.title] || null;
+}
+
+function doneUrl(id) {
+  return `/share/${encodeURIComponent(id)}/done`;
+}
+
+async function sendDone(decoded, key, done) {
+  const id = linkedShareId(decoded);
+  if (!id) return;
+  try {
+    await fetch(doneUrl(id), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, done }),
+    });
+  } catch (err) {
+    console.error(err); // 내 화면 기록은 이미 남았다 — 다음에 누를 때 다시 보낸다
+  }
+}
+
+// 서버 기록을 내 기록에 맞춘다. 바뀐 것이 있으면 true
+async function pullDone(decoded) {
+  const id = linkedShareId(decoded);
+  if (!id) return false;
+  const response = await fetch(doneUrl(id));
+  if (!response.ok) return false;
+  const remote = new Set((await response.json()).done);
+  let changed = false;
+  for (const todo of decoded.todos) {
+    const key = todoKey(decoded, todo);
+    if (remote.has(key) === completedTodos.has(key)) continue;
+    if (remote.has(key)) completedTodos.add(key);
+    else completedTodos.delete(key);
+    changed = true;
+  }
+  if (changed) saveCompletedTodos();
+  return changed;
+}
+
+async function refreshDone() {
+  if (!currentDecoded || document.hidden) return;
+  try {
+    if (await pullDone(currentDecoded)) renderTodos(currentDecoded);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+setInterval(refreshDone, SYNC_SECONDS * 1000);
+
 // ── 손주 모드: ?share=<id> 로 열리면 사진 올리기 없이 저장된 해독 결과를 보여 준다 ──
 // 원본 사진은 공유 저장소에 아예 없다(share.py) — 그래서 3색 사진 없이 할 일·근거만 보인다.
 
@@ -111,8 +183,10 @@ async function openShared(id) {
   try {
     const response = await fetch(`/share/${encodeURIComponent(id)}`);
     if (!response.ok) throw new Error(String(response.status));
+    const decoded = await response.json();
+    await pullDone(decoded).catch(console.error);
     $("grandchildNotice").hidden = false;
-    show(await response.json());
+    show(decoded);
     $("status").textContent = "";
   } catch (err) {
     console.error(err);
@@ -175,7 +249,9 @@ async function uploadPhoto(file) {
   form.append("file", photo, photo.name || file.name);
   const response = await fetch("/decode", { method: "POST", body: form });
   if (response.ok) {
-    show(await response.json());
+    const decoded = await response.json();
+    await pullDone(decoded).catch(console.error); // 전에 보낸 고지서면 가족이 누른 것도 보인다
+    show(decoded);
     return "";
   }
   const body = await response.json().catch(() => ({}));
@@ -221,20 +297,35 @@ $("shareBtn").addEventListener("click", async () => {
       body: JSON.stringify(currentDecoded),
     });
     if (!response.ok) throw new Error(String(response.status));
-    const { share_id } = await response.json();
-    await handOver(`${location.origin}${location.pathname}?share=${share_id}`);
+    const { share_id, expires_at } = await response.json();
+    await linkShare(currentDecoded, share_id);
+    await handOver(`${location.origin}${location.pathname}?share=${share_id}`, openUntil(expires_at));
   } catch (err) {
     console.error(err);
     $("shareResult").textContent = "링크를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.";
   }
 });
 
+// 이 고지서를 링크에 묶고, 이미 누른 「다 했어요」도 가족 화면에 보낸다
+async function linkShare(decoded, id) {
+  rememberShareLink(decoded, id);
+  const done = decoded.todos.map((todo) => todoKey(decoded, todo)).filter((key) => completedTodos.has(key));
+  await Promise.all(done.map((key) => sendDone(decoded, key, true)));
+}
+
+// 서버가 준 만료 시각(UTC ISO) → 「11월 30일까지 열려요」
+function openUntil(expiresAt) {
+  const until = expiresAt ? new Date(expiresAt) : null;
+  if (!until || !Number.isFinite(until.getTime())) return "";
+  return ` 링크는 ${until.getMonth() + 1}월 ${until.getDate()}일까지 열려요.`;
+}
+
 // 공유 창 → 클립보드 → 직접 복사할 칸 순서로 링크를 건넨다
-async function handOver(link) {
+async function handOver(link, untilNote) {
   if (navigator.share) {
     try {
       await navigator.share({ title: "또박또박 해독 결과", text: "가족과 함께 확인해 주세요.", url: link });
-      $("shareResult").textContent = "공유 창을 열었어요.";
+      $("shareResult").textContent = `공유 창을 열었어요.${untilNote}`;
       return;
     } catch (err) {
       if (err.name === "AbortError") {
@@ -246,17 +337,17 @@ async function handOver(link) {
   }
   try {
     await navigator.clipboard.writeText(link);
-    $("shareResult").textContent = "링크를 복사했어요. 가족에게 붙여넣어 보내세요.";
+    $("shareResult").textContent = `링크를 복사했어요. 가족에게 붙여넣어 보내세요.${untilNote}`;
     return;
   } catch {
     // http 주소에선 클립보드가 막혀 있다 — 직접 복사할 칸을 보여 준다
   }
-  showCopyableLink(link);
+  showCopyableLink(link, untilNote);
 }
 
-function showCopyableLink(link) {
+function showCopyableLink(link, untilNote) {
   const label = document.createElement("span");
-  label.textContent = "링크를 복사해 가족에게 보내세요: ";
+  label.textContent = `링크를 복사해 가족에게 보내세요.${untilNote} `;
   const input = document.createElement("input");
   input.readOnly = true;
   input.value = link;
@@ -273,11 +364,15 @@ function show(decoded) {
   $("aiNotice").textContent = decoded.ai_notice;
   $("title").textContent = decoded.title;
   $("marks").replaceChildren(...decoded.marks.map(markBox));
-  $("todos").replaceChildren(...todoItems(decoded, displayToday(decoded)));
+  renderTodos(decoded);
   $("basis").replaceChildren(...basisItems(decoded.basis));
   $("shareResult").textContent = "";
   $("shareBtn").hidden = !!sharedId; // 손주 모드 화면에선 또 보내기 버튼을 안 띄운다
   $("result").hidden = false;
+}
+
+function renderTodos(decoded) {
+  $("todos").replaceChildren(...todoItems(decoded, displayToday(decoded)));
 }
 
 // bbox = [x, y, w, h] 사진 대비 비율 → 퍼센트 위치. 누르면 그 글자가 펼쳐진다
@@ -353,7 +448,7 @@ function todoItem(decoded, todo, today) {
   details.className = "details";
   const money = todo.amount != null ? `${todo.amount.toLocaleString("ko-KR")}원` : "";
   details.textContent = [money, todo.how].filter(Boolean).join(" · ");
-  li.append(title, due, details, doneButton(li, todoKey(decoded, todo)));
+  li.append(title, due, details, doneButton(li, decoded, todoKey(decoded, todo)));
   return li;
 }
 
@@ -371,7 +466,7 @@ function todoKey(decoded, todo) {
   return JSON.stringify([decoded.title, todo.title, todo.due || "", todo.amount ?? null]);
 }
 
-function doneButton(li, key) {
+function doneButton(li, decoded, key) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "todo-complete";
@@ -386,6 +481,7 @@ function doneButton(li, key) {
     if (done) completedTodos.add(key);
     else completedTodos.delete(key);
     saveCompletedTodos();
+    sendDone(decoded, key, done);
   });
   return button;
 }

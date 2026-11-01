@@ -10,17 +10,20 @@ from time import monotonic
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from . import ROOT
 from .agent import decode
 from .notify import notify_deadlines
 from .schema import Decoded
-from .share import create_share, get_share, share_expires_at
+from .share import create_share, done_keys, get_share, mark_done, share_expires_at
 
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
 MULTIPART_OVERHEAD = 64 * 1024  # multipart 경계·파일명 등 파일 외 메타데이터 여유
 MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
+SHARE_GONE = "링크가 만료됐거나 없는 공유예요"
+MAX_TODO_KEY_CHARS = 500  # 할 일 키 = [문서 제목, 할 일 제목, 기한, 금액] JSON — 몇십 자다
 TOO_LARGE = f"사진이 너무 커요({MAX_BYTES // (1024 * 1024)}MB 이하)"
 DECODE_PER_MINUTE = max(1, int(os.environ.get("DECODE_PER_MINUTE", "10")))
 DECODE_WINDOW_SECONDS = 60  # DECODE_PER_MINUTE 를 세는 창
@@ -183,8 +186,34 @@ def share_decoded(decoded: Decoded) -> dict:
 def get_shared_decoded(share_id: str) -> Decoded:
     shared = get_share(share_id)
     if shared is None:
-        raise HTTPException(404, "링크가 만료됐거나 없는 공유예요")
+        raise HTTPException(404, SHARE_GONE)
     return shared
+
+
+class DoneChange(BaseModel):
+    key: str = Field(min_length=1, max_length=MAX_TODO_KEY_CHARS)
+    done: bool
+
+
+@app.get("/share/{share_id}/done")
+def get_shared_done(share_id: str) -> dict:
+    """같은 링크를 연 가족이 함께 보는 「다 했어요」 기록."""
+    keys = done_keys(share_id)
+    if keys is None:
+        raise HTTPException(404, SHARE_GONE)
+    return {"done": keys}
+
+
+@app.put("/share/{share_id}/done")
+def put_shared_done(share_id: str, change: DoneChange) -> dict:
+    """어르신이 누른 「다 했어요」를 기록한다 — 자녀 화면이 다음에 읽을 때 완료로 보인다."""
+    try:
+        keys = mark_done(share_id, change.key, done=change.done)
+    except ValueError:
+        raise HTTPException(413, "할 일 기록이 너무 많아요") from None
+    if keys is None:
+        raise HTTPException(404, SHARE_GONE)
+    return {"done": keys}
 
 
 # 포트 하나(M3 = 8037)로 팀 홈페이지·서비스 화면·API 를 같이 낸다(CORS 불필요).

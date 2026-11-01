@@ -3,6 +3,8 @@ import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+
 from app import share
 from app.schema import Decoded
 from app.share import create_share, get_share, share_expires_at
@@ -102,3 +104,31 @@ def test_share_db_is_owner_only(tmp_path):
     db.touch(mode=0o644)
     create_share(_decoded())
     assert db.stat().st_mode & 0o777 == 0o600
+
+
+def test_done_keys_are_shared_between_everyone_who_opens_the_link():
+    share_id = create_share(_decoded())
+    assert share.done_keys(share_id) == []
+    assert share.mark_done(share_id, "카드1", done=True) == ["카드1"]
+    assert share.mark_done(share_id, "카드1", done=True) == ["카드1"]  # 두 번 눌러도 하나
+    assert share.done_keys(share_id) == ["카드1"]
+    assert share.mark_done(share_id, "카드1", done=False) == []
+
+
+def test_done_keys_of_unknown_or_expired_share_is_none(monkeypatch):
+    assert share.done_keys("없는-아이디") is None
+    assert share.mark_done("없는-아이디", "카드1", done=True) is None
+    monkeypatch.setattr(share.time, "time", lambda: 100.0)
+    share_id = create_share(_decoded(), ttl_seconds=10)
+    share.mark_done(share_id, "카드1", done=True)
+    monkeypatch.setattr(share.time, "time", lambda: 111.0)
+    assert share.done_keys(share_id) is None
+
+
+def test_done_keys_per_share_are_capped(monkeypatch):
+    monkeypatch.setattr(share, "MAX_DONE_PER_SHARE", 2)
+    share_id = create_share(_decoded())
+    share.mark_done(share_id, "a", done=True)
+    share.mark_done(share_id, "b", done=True)
+    with pytest.raises(ValueError):
+        share.mark_done(share_id, "c", done=True)

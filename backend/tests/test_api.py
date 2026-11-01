@@ -119,3 +119,33 @@ def test_commit_lookup_and_health_cache(monkeypatch):
     for _ in range(2):
         assert client.get("/health").json()["commit"] == main.COMMIT
     assert calls == [["git", "rev-parse", "--short", "HEAD"]]
+
+
+def test_done_pressed_by_parent_shows_on_child_screen():
+    """어르신이 「다 했어요」를 누르면 같은 링크를 연 자녀 화면도 완료를 읽는다."""
+    decoded = client.post("/decode", files={"file": ("a.jpg", b"fake", "image/jpeg")}).json()
+    share_id = client.post("/share", json=decoded).json()["share_id"]
+    key = '["고지서","건강보험료 내기","2026-10-31",48200]'
+
+    parent = client.put(f"/share/{share_id}/done", json={"key": key, "done": True})
+    child = client.get(f"/share/{share_id}/done")
+
+    assert parent.status_code == 200
+    assert child.json() == {"done": [key]}
+    client.put(f"/share/{share_id}/done", json={"key": key, "done": False})
+    assert client.get(f"/share/{share_id}/done").json() == {"done": []}
+
+
+def test_done_of_unknown_share_is_404():
+    assert client.get("/share/없음/done").status_code == 404
+    assert client.put("/share/없음/done", json={"key": "k", "done": True}).status_code == 404
+
+
+def test_done_rejects_oversized_key():
+    decoded = client.post("/decode", files={"file": ("a.jpg", b"fake", "image/jpeg")}).json()
+    share_id = client.post("/share", json=decoded).json()["share_id"]
+    long_key = "가" * (main.MAX_TODO_KEY_CHARS + 1)
+    assert (
+        client.put(f"/share/{share_id}/done", json={"key": long_key, "done": True}).status_code
+        == 422
+    )
