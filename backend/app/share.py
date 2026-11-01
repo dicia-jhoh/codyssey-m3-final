@@ -109,21 +109,28 @@ def mark_done(share_id: str, todo_key: str, *, done: bool) -> list[str] | None:
         _delete_expired(db, time.time())
         if not _exists(db, share_id):
             return None
-        if done:
+        if not done:
+            db.execute(
+                "DELETE FROM share_done WHERE share_id = ? AND todo_key = ?", (share_id, todo_key)
+            )
+        elif not _has_key(db, share_id, todo_key):  # 이미 적힌 키는 한도를 다시 세지 않는다
             count = db.execute(
                 "SELECT COUNT(*) FROM share_done WHERE share_id = ?", (share_id,)
             ).fetchone()[0]
             if count >= MAX_DONE_PER_SHARE:
                 raise ValueError("할 일 기록이 너무 많다")
-            db.execute("INSERT OR IGNORE INTO share_done VALUES (?, ?)", (share_id, todo_key))
-        else:
-            db.execute(
-                "DELETE FROM share_done WHERE share_id = ? AND todo_key = ?", (share_id, todo_key)
-            )
+            db.execute("INSERT INTO share_done VALUES (?, ?)", (share_id, todo_key))
         rows = db.execute(
             "SELECT todo_key FROM share_done WHERE share_id = ? ORDER BY rowid", (share_id,)
         )
         return [key for (key,) in rows]
+
+
+def _has_key(db: sqlite3.Connection, share_id: str, todo_key: str) -> bool:
+    row = db.execute(
+        "SELECT 1 FROM share_done WHERE share_id = ? AND todo_key = ?", (share_id, todo_key)
+    ).fetchone()
+    return row is not None
 
 
 def _exists(db: sqlite3.Connection, share_id: str) -> bool:

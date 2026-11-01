@@ -23,7 +23,8 @@ BASIS_ARTICLES = (
     ("질서위반행위규제법 시행령", "5"),
 )
 _MAX_TOKENS = 1024
-_TIMEOUT_SECONDS = 60
+# 해독 응답 안에서 기다리는 시간이다 — 초안이 늦으면 빈칸 양식으로 넘어간다
+_TIMEOUT_SECONDS = 30
 
 _SYSTEM_PROMPT = """\
 너는 과태료 사전통지서를 받은 어르신을 돕는다. 아래 고지서 글(개인정보는 이미 가렸다)을 보고
@@ -78,7 +79,8 @@ def _ask(text: str, api_key: str) -> str:
         response.raise_for_status()
         parts = response.json()["candidates"][0]["content"]["parts"]
         return "".join(part.get("text", "") for part in parts)
-    message = Anthropic(api_key=api_key).messages.create(
+    client = Anthropic(api_key=api_key, timeout=_TIMEOUT_SECONDS, max_retries=0)
+    message = client.messages.create(
         model=extract._MODEL,
         max_tokens=_MAX_TOKENS,
         system=_SYSTEM_PROMPT,

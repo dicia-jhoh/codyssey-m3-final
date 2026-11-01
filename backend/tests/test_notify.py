@@ -110,3 +110,18 @@ def test_past_deadline_is_not_sent_to_n8n(monkeypatch):
     past = result().model_copy(update={"todos": [Todo(title="지난 일", due="2000-01-01")]})
     notify.notify_deadlines(past)
     post.assert_not_called()
+
+
+def test_today_is_korean_date_not_server_date(monkeypatch):
+    """서버(UTC)가 11-01 23시면 한국은 11-02 다 — 11-01 기한의 「당일」 알림은 없다."""
+    from datetime import UTC
+    from datetime import datetime as real_datetime
+
+    class Clock(real_datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return real_datetime(2099, 11, 1, 23, 0, tzinfo=UTC).astimezone(tz)
+
+    monkeypatch.setattr(notify, "datetime", Clock)
+    late = result().model_copy(update={"todos": [Todo(title="돈 내기", due="2099-11-01")]})
+    assert notify.kakao_alerts(late) == []

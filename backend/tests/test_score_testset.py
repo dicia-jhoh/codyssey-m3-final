@@ -189,3 +189,18 @@ def test_server_mode_posts_photos_and_writes_summary(monkeypatch, tmp_path, caps
     assert summary["server"] == "http://x:8037/"
     assert summary["images"]["total"] == 1 and summary["seconds"]["mean"] >= 0
     assert "응답 시간: 평균" in capsys.readouterr().out
+
+
+def test_server_failure_on_one_photo_counts_as_wrong_and_keeps_going(monkeypatch, tmp_path):
+    import json
+    from unittest.mock import Mock
+
+    import httpx
+
+    from scripts import score_testset
+
+    monkeypatch.setattr(score_testset.httpx, "post", Mock(side_effect=httpx.ConnectError("down")))
+    out = tmp_path / "score.json"
+    assert main(["--labels", str(_EXAMPLE_LABELS), "--server", "http://x", "--out", str(out)]) == 0
+    summary = json.loads(out.read_text())
+    assert summary["failures"] == 1 and summary["items"]["correct"] == 0

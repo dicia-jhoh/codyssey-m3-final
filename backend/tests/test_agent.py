@@ -216,3 +216,11 @@ def test_same_amount_printed_three_times_is_one_card():
     assert _todos_from_marks("과태료", marks) == [
         Todo(title="과태료 돈 내기", due="2026-11-26", amount=40000, how="은행 또는 앱 납부")
     ]
+
+
+def test_notice_that_only_warns_about_a_fine_is_not_a_fine_notice():
+    """「…하면 과태료가 부과됩니다」 한 줄만 있는 안내는 과태료 고지서가 아니다."""
+    text = "전입신고 안내\n14일 안에 신고하지 않으면 과태료가 부과됩니다.\n신청서를 내 주세요."
+    assert classify(text) == "신청서"
+    assert classify("주정차위반 과태료 부과 고지서\n과태료 금액 40,000원") == "과태료"
+    assert classify("과태료 부과 사전통지서 및 의견제출 안내") == "과태료"

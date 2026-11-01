@@ -7,8 +7,9 @@ n8n 에 넘긴다(실제 발송 노드는 비활성). 이미 지난 기한은 �
 
 import logging
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -17,13 +18,14 @@ from .schema import Alert, Decoded, Todo
 log = logging.getLogger(__name__)
 
 ALERT_HOUR = 9  # 알림 시각(오전 9시) — 어르신이 아침에 확인하기 쉬운 때
+KST = ZoneInfo("Asia/Seoul")  # 서버 시간대(UTC)가 아니라 고지서의 날짜 기준
 DAYS_BEFORE = 3
 _WEBHOOK_TIMEOUT_SECONDS = 5
 
 
 def kakao_alerts(decoded: Decoded, *, today: date | None = None) -> list[Alert]:
     """할 일마다 사흘 전·당일 알림. 지난 날짜의 알림은 만들지 않는다(샘플도 같은 규칙)."""
-    today = today or date.today()
+    today = today or _today()
     alerts: list[Alert] = []
     for todo in decoded.todos:
         due = _due_date(todo)
@@ -51,7 +53,7 @@ def notify_deadlines(decoded: Decoded) -> None:
         return
     for todo in decoded.todos:
         due = _due_date(todo)
-        if due is None or due < date.today():
+        if due is None or due < _today():
             continue
         try:
             # 알림 문구에 쓰는 것만 보낸다 — 금액·납부 방법은 n8n 이 안 쓰는데 밖으로 나간다(OCR)
@@ -61,6 +63,10 @@ def notify_deadlines(decoded: Decoded) -> None:
         except Exception as error:
             # 주소·연락처·문서 내용을 로그에 남기지 않는다. 다음 할 일은 계속 보낸다.
             log.warning("n8n 기한 알림 전송 실패: %s", type(error).__name__)
+
+
+def _today() -> date:
+    return datetime.now(KST).date()
 
 
 def _due_date(todo: Todo) -> date | None:

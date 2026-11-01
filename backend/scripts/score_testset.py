@@ -192,7 +192,11 @@ def _decode_label(dataset_root: Path, label: dict, server: str | None) -> Decode
     if not image_path.exists():
         print(f"[!] 이미지 없음: {image_path}")
         return None
-    result = _decode_on(server, image_path) if server else decode(image_path.read_bytes())
+    try:
+        result = _decode_on(server, image_path) if server else decode(image_path.read_bytes())
+    except httpx.HTTPError as error:  # 한 장의 429·5xx·시간 초과로 측정 전체를 멈추지 않는다
+        print(f"[!] {label['image']} — 서버 해독 실패({type(error).__name__}), 전부 오답 처리")
+        return None
     if result.sample:
         print(f"[!] {label['image']} — 추출 실패로 샘플 모드에 빠짐")
         return None
