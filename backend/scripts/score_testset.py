@@ -4,9 +4,8 @@
     cd backend
     LLM_API_KEY=... python -m scripts.score_testset
 
-labels.jsonl 모양은 data/testset/labels.example.jsonl 참고. 아직 실제 라벨 파일
-(data/testset/labels.jsonl)과 사진(data/testset/images/)이 없다 — 김기훈이 채우면
-바로 돌아간다.
+labels.jsonl 모양은 data/testset/labels.example.jsonl 참고. 사진은 labels.jsonl 과 같은
+폴더 기준 상대 경로로 찾는다(실물 사진은 개인정보라 커밋하지 않는다).
 
 이 숫자는 발표·평가에 그대로 쓰인다 — 그래서 점수가 실제보다 높게 나오는 경로를
 의도적으로 막아 둔다(아래 함수 docstring 참고).
@@ -25,6 +24,7 @@ from app.agent import decode
 from app.schema import Decoded
 
 _DEFAULT_LABELS = ROOT / "data" / "testset" / "labels.jsonl"
+TARGET_ACCURACY = 0.9  # 기획서 성공 기준 「추출 정확도 90% 이상」
 
 
 @dataclass
@@ -83,49 +83,39 @@ def score_one(label: dict, result: Decoded | None) -> ImageScore:
         score.details.append("추출 실패(샘플 모드) 또는 이미지 없음 — 전부 오답 처리")
         return score
 
-    extracted_money = [m.value for m in result.marks if m.kind == "money"]
-    extracted_dates = [m.value for m in result.marks if m.kind == "deadline"]
-    extracted_docs = [m.text for m in result.marks if m.kind == "document"]
-    extracted_todo_pairs = [(t.due, t.amount) for t in result.todos]
+    got_money = [m.value for m in result.marks if m.kind == "money"]
+    got_dates = [m.value for m in result.marks if m.kind == "deadline"]
+    got_docs = [m.text for m in result.marks if m.kind == "document"]
+    got_todos = [(t.due, t.amount) for t in result.todos]
 
-    for amount in expected_money:
-        score.total += 1
-        if str(amount) in extracted_money:
-            score.correct += 1
-        else:
-            score.details.append(f"금액 놓침: {amount}원")
-    for value in extracted_money:
-        if value not in {str(a) for a in expected_money}:
-            score.total += 1
-            score.details.append(f"잘못 뽑음(금액): {value}원")
-
-    for due in expected_dates:
-        score.total += 1
-        if due in extracted_dates:
-            score.correct += 1
-        else:
-            score.details.append(f"기한 놓침: {due}")
-    for value in extracted_dates:
-        if value not in expected_dates:
-            score.total += 1
-            score.details.append(f"잘못 뽑음(기한): {value}")
-
+    _score_both_ways(score, [str(a) for a in expected_money], got_money, "금액", "원")
+    _score_both_ways(score, expected_dates, got_dates, "기한")
     for doc in expected_docs:
-        score.total += 1
-        if _fuzzy_match(doc, extracted_docs):
-            score.correct += 1
-        else:
-            score.details.append(f"서류 놓침: {doc}")
-
+        _count(score, _fuzzy_match(doc, got_docs), f"서류 놓침: {doc}")
     for todo in expected_todos:
-        score.total += 1
-        pair = (todo.get("due"), todo.get("amount"))
-        if pair in extracted_todo_pairs:
-            score.correct += 1
-        else:
-            score.details.append(f"할 일 카드 놓침: 기한={pair[0]} 금액={pair[1]}")
-
+        due, amount = todo.get("due"), todo.get("amount")
+        _count(score, (due, amount) in got_todos, f"할 일 카드 놓침: 기한={due} 금액={amount}")
     return score
+
+
+def _count(score: ImageScore, hit: bool, miss_note: str) -> None:
+    score.total += 1
+    if hit:
+        score.correct += 1
+    else:
+        score.details.append(miss_note)
+
+
+def _score_both_ways(
+    score: ImageScore, expected: list[str], got: list[str], name: str, unit: str = ""
+) -> None:
+    """재현율(정답을 다 뽑았나)과 정밀도(엉뚱한 값을 더 뽑았나)를 같은 분모에 센다."""
+    for value in expected:
+        _count(score, value in got, f"{name} 놓침: {value}{unit}")
+    for value in got:
+        if value not in expected:
+            score.total += 1
+            score.details.append(f"잘못 뽑음({name}): {value}{unit}")
 
 
 def _read_labels(path: Path) -> list[dict]:
@@ -151,51 +141,54 @@ def main(argv: list[str] | None = None) -> int:
         print("[!] LLM_API_KEY 없음 — 샘플 모드로는 의미 있는 정확도를 잴 수 없음")
         return 1
 
-    dataset_root = args.labels.parent
     scores: list[ImageScore] = []
     failures = 0
-    doc_type_correct = 0
-    doc_type_total = 0
-
+    doc_types: list[bool] = []  # 판별을 맞혔나 — 참고용, 전체 정확도엔 넣지 않는다
     for label in _read_labels(args.labels):
-        image_path = dataset_root / label["image"]
-        result: Decoded | None = None
-
-        if not image_path.exists():
-            print(f"[!] 이미지 없음: {image_path}")
-            failures += 1
-        else:
-            result = decode(image_path.read_bytes())
-            if result.sample:
-                print(f"[!] {label['image']} — 추출 실패로 샘플 모드에 빠짐")
-                failures += 1
-                result = None
-
+        result = _decode_label(args.labels.parent, label)
+        failures += result is None
+        if result is not None and label.get("doc_type"):
+            doc_types.append(result.doc_type == label["doc_type"])
         score = score_one(label, result)
         scores.append(score)
-
-        if result is not None and label.get("doc_type"):
-            doc_type_total += 1
-            if result.doc_type == label["doc_type"]:
-                doc_type_correct += 1
-
-        print(f"{label['image']}: {score.correct}/{score.total} ({score.accuracy:.0%})")
-        for detail in score.details:
-            print(f"  - {detail}")
+        _print_score(score)
 
     if not scores:
         print("[!] 채점한 이미지가 없음")
         return 1
+    _print_summary(scores, failures, doc_types)
+    return 0
 
+
+def _decode_label(dataset_root: Path, label: dict) -> Decoded | None:
+    """라벨의 사진을 해독한다. 사진이 없거나 샘플 모드에 빠지면 None(전부 오답으로 센다)."""
+    image_path = dataset_root / label["image"]
+    if not image_path.exists():
+        print(f"[!] 이미지 없음: {image_path}")
+        return None
+    result = decode(image_path.read_bytes())
+    if result.sample:
+        print(f"[!] {label['image']} — 추출 실패로 샘플 모드에 빠짐")
+        return None
+    return result
+
+
+def _print_score(score: ImageScore) -> None:
+    print(f"{score.image}: {score.correct}/{score.total} ({score.accuracy:.0%})")
+    for detail in score.details:
+        print(f"  - {detail}")
+
+
+def _print_summary(scores: list[ImageScore], failures: int, doc_types: list[bool]) -> None:
     total_correct = sum(s.correct for s in scores)
     total_items = sum(s.total for s in scores)
     overall = total_correct / total_items if total_items else 0.0
-    verdict = "달성" if overall >= 0.9 else "미달"
-    print(f"\n전체: {total_correct}/{total_items} ({overall:.1%}) — 기준 90% {verdict}")
+    verdict = "달성" if overall >= TARGET_ACCURACY else "미달"
+    target = f"기준 {TARGET_ACCURACY:.0%} {verdict}"
+    print(f"\n전체: {total_correct}/{total_items} ({overall:.1%}) — {target}")
     print(f"추출 실패/이미지 없음: {failures}/{len(scores)}장")
-    if doc_type_total:
-        print(f"문서 종류 판별(참고용, 전체 정확도엔 미포함): {doc_type_correct}/{doc_type_total}")
-    return 0
+    if doc_types:
+        print(f"문서 종류 판별(참고용, 전체 정확도엔 미포함): {sum(doc_types)}/{len(doc_types)}")
 
 
 if __name__ == "__main__":
