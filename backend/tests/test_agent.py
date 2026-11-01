@@ -205,3 +205,14 @@ def test_bill_gets_no_reply_draft(monkeypatch):
     monkeypatch.setattr(reply, "_ask", lambda text, key: pytest.fail("고지서엔 초안을 쓰지 않는다"))
     result = decode(b"fake")
     assert result.reply_draft == "" and not result.reply_needed
+
+
+def test_same_amount_printed_three_times_is_one_card():
+    """과태료 고지서는 금액을 표·본문·납부서에 찍는다 — 실측(b26)에서 같은 카드가 넷 나왔다."""
+    marks = [
+        Mark(kind="money", text="40,000원", value="40000", bbox=[0.1, y, 0.2, 0.05])
+        for y in (0.30, 0.32, 0.34)
+    ] + [Mark(kind="deadline", text="2026.11.26", value="2026-11-26", bbox=[0.1, 0.31, 0.2, 0.05])]
+    assert _todos_from_marks("과태료", marks) == [
+        Todo(title="과태료 돈 내기", due="2026-11-26", amount=40000, how="은행 또는 앱 납부")
+    ]

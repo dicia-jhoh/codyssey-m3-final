@@ -107,12 +107,17 @@ def _todos_from_marks(doc_type: str, marks: list[Mark]) -> list[Todo]:
         for money in marks
         if money.kind == "money"
     ]
+    money_dues = {t.due for t in todos}
     todos += [
         Todo(title=_title_for(doc_type, has_money=False), due=d.value, amount=None, how=_how(prep))
         for i, d in enumerate(deadline_marks)
-        if i not in paired
+        if i not in paired and d.value not in money_dues  # 그 날짜는 이미 돈 카드에 있다
     ]
-    return todos
+    # 고지서는 같은 금액을 표·본문·납부서에 여러 번 찍는다 — 같은 카드는 한 장만
+    unique: dict[tuple, Todo] = {}
+    for todo in todos:
+        unique.setdefault((todo.title, todo.due, todo.amount, todo.how), todo)
+    return list(unique.values())
 
 
 def _money_todo(
