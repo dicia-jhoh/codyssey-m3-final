@@ -1,15 +1,4 @@
-from pathlib import Path
-
-import pytest
-
 from app import rag
-
-
-@pytest.fixture(autouse=True)
-def isolated_chroma_dir(tmp_path: Path, monkeypatch):
-    """테스트마다 격리된 Chroma 디렉터리를 쓴다 — 실제 data/legal/chroma/를 안 건드린다."""
-    monkeypatch.setattr(rag, "_CHROMA_DIR", tmp_path)
-    monkeypatch.setattr(rag, "_client", None)
 
 
 def test_citations_extracts_law_name_and_article_number():
@@ -85,3 +74,8 @@ def test_find_basis_returns_matching_article_after_add_article():
 def test_find_basis_ignores_unrelated_article_in_collection():
     rag.add_article(law_name="지방세법", article_no="15", quote="원문", claim="풀이")
     assert rag.find_basis("국민건강보험법 제80조에 따라") == []
+
+
+def test_citations_allow_spaces_inside_article_number():
+    # 고지서는 「제 80 조 의 2」처럼 띄어 쓰기도 한다 — 같은 조문으로 읽어야 한다
+    assert rag._citations("국민건강보험법 제 80 조 의 2 에 따라") == [("국민건강보험법", "80의2")]

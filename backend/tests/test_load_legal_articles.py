@@ -7,12 +7,6 @@ from app import rag
 from scripts.load_legal_articles import _DEFAULT_ARTICLES, load
 
 
-@pytest.fixture(autouse=True)
-def isolated_chroma_dir(tmp_path: Path, monkeypatch):
-    monkeypatch.setattr(rag, "_CHROMA_DIR", tmp_path / "chroma")
-    monkeypatch.setattr(rag, "_client", None)
-
-
 def _write_jsonl(path: Path, rows: list[dict]) -> None:
     path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows), encoding="utf-8")
 
@@ -71,3 +65,24 @@ def test_real_articles_file_is_well_formed_and_loadable():
     assert rag.find_basis("지방세기본법 제55조에 따라")
     assert rag.find_basis("국민연금법 제97조에 따라")
     assert rag.find_basis("질서위반행위규제법 제24조에 따라")
+
+
+def _row(article_no: str, quote: str) -> str:
+    return json.dumps(
+        {"law_name": "지방세법", "article_no": article_no, "quote": quote, "claim": "풀이"},
+        ensure_ascii=False,
+    )
+
+
+def test_same_article_twice_stops_loading(tmp_path: Path):
+    path = tmp_path / "articles.jsonl"
+    path.write_text(_row("115", "앞 원문") + "\n" + _row("115", "뒤 원문"), encoding="utf-8")
+    with pytest.raises(ValueError, match="두 번"):
+        load(path)
+
+
+def test_duplicate_message_names_branch_article_like_the_screen(tmp_path: Path):
+    path = tmp_path / "articles.jsonl"
+    path.write_text(_row("80의2", "앞") + "\n" + _row("80의2", "뒤"), encoding="utf-8")
+    with pytest.raises(ValueError, match="지방세법 제80조의2"):
+        load(path)
