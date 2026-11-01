@@ -252,7 +252,8 @@ def _print_summary(summary: dict) -> None:
     print(f"모두 맞힌 사진: {images['all_correct']}/{images['total']}장")
     print(f"추출 실패/이미지 없음: {summary['failures']}/{images['total']}장")
     for bill, s in summary["by_bill"].items():
-        print(f"  {bill}: {s['correct']}/{s['total']} ({s['correct'] / s['total']:.1%})")
+        accuracy = s["correct"] / s["total"] if s["total"] else 0.0
+        print(f"  {bill}: {s['correct']}/{s['total']} ({accuracy:.1%})")
     if summary["doc_type"]["total"]:
         judged = summary["doc_type"]
         print(

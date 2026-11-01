@@ -17,7 +17,6 @@ from .schema import Alert, Decoded, Todo
 
 log = logging.getLogger(__name__)
 
-ALERT_HOUR = 9  # 알림 시각(오전 9시) — 어르신이 아침에 확인하기 쉬운 때
 KST = ZoneInfo("Asia/Seoul")  # 서버 시간대(UTC)가 아니라 고지서의 날짜 기준
 DAYS_BEFORE = 3
 _WEBHOOK_TIMEOUT_SECONDS = 5

@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import secrets
 import sqlite3
@@ -16,7 +17,7 @@ from contextlib import closing
 from pathlib import Path
 
 from . import ROOT
-from .schema import Decoded
+from .schema import Decoded, Todo
 
 DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60
 MAX_SHARES = 1000
@@ -48,7 +49,17 @@ def _connect() -> sqlite3.Connection:
 
 def _delete_expired(db: sqlite3.Connection, now: float) -> None:
     db.execute("DELETE FROM shares WHERE expires_at < ?", (now,))
+    _delete_orphan_done(db)
+
+
+def _delete_orphan_done(db: sqlite3.Connection) -> None:
     db.execute("DELETE FROM share_done WHERE share_id NOT IN (SELECT id FROM shares)")
+
+
+def key_of(decoded: Decoded, todo: Todo) -> str:
+    """화면(web/app.js todoKey)과 같은 할 일 키 — JSON.stringify 와 같은 모양으로 만든다."""
+    parts = [decoded.title, todo.title, todo.due or "", todo.amount]
+    return json.dumps(parts, ensure_ascii=False, separators=(",", ":"))
 
 
 def create_share(decoded: Decoded, *, ttl_seconds: float = DEFAULT_TTL_SECONDS) -> str:
@@ -66,6 +77,7 @@ def create_share(decoded: Decoded, *, ttl_seconds: float = DEFAULT_TTL_SECONDS) 
             "SELECT id FROM shares ORDER BY created_at DESC, rowid DESC LIMIT -1 OFFSET ?)",
             (MAX_SHARES,),
         )
+        _delete_orphan_done(db)  # 한도로 밀려난 공유의 완료 기록도 지운다
     return share_id
 
 
@@ -102,13 +114,17 @@ def done_keys(share_id: str) -> list[str] | None:
 def mark_done(share_id: str, todo_key: str, *, done: bool) -> list[str] | None:
     """할 일 하나를 했다/안 했다로 적고 바뀐 목록을 돌려준다. 없거나 만료된 공유는 None.
 
-    한 공유의 기록이 MAX_DONE_PER_SHARE 를 넘으면 ValueError — 인증 없는 공개 주소라
-    아무나 키를 끝없이 쌓지 못하게 한다.
+    그 공유의 할 일이 아닌 키는 KeyError — 링크를 가진 사람이 아무 키나 쌓아 한도를 채우지
+    못하게 한다. 한 공유의 기록이 MAX_DONE_PER_SHARE 를 넘으면 ValueError.
     """
     with _lock, closing(_connect()) as db, db:
         _delete_expired(db, time.time())
-        if not _exists(db, share_id):
+        row = db.execute("SELECT body FROM shares WHERE id = ?", (share_id,)).fetchone()
+        if row is None:
             return None
+        decoded = Decoded.model_validate_json(row[0])
+        if todo_key not in {key_of(decoded, t) for t in decoded.todos}:
+            raise KeyError(todo_key)
         if not done:
             db.execute(
                 "DELETE FROM share_done WHERE share_id = ? AND todo_key = ?", (share_id, todo_key)
