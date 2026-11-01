@@ -19,3 +19,17 @@ def jo_code(article_no: str) -> str:
     if not m:
         raise ValueError(f"조문 번호 모양이 아니다: {article_no!r} (예: \"80\", \"80의2\")")
     return f"{int(m.group(1)):04d}{int(m.group(2) or 0):02d}"
+
+
+def _squash(text: str) -> str:
+    """공백·줄바꿈을 전부 지운다 — 원문과 quote 의 띄어쓰기 차이(「말한다) 까지」 vs 「말한다)까지」)를 무시하려고."""
+    return re.sub(r"\s+", "", text)
+
+
+def quote_matches(article_text: str, quote: str) -> bool:
+    """quote 가 조문 원문 안에 글자 그대로 들어 있는가(공백 차이만 무시).
+
+    quote 는 조문의 일부(①항 하나, 3호 하나)라서 「같다」가 아니라 「포함된다」로 본다.
+    """
+    q = _squash(quote)
+    return bool(q) and q in _squash(article_text)
