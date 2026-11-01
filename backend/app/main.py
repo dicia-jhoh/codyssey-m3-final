@@ -21,7 +21,9 @@ from .share import create_share, get_share, share_expires_at
 MAX_BYTES = 10 * 1024 * 1024  # 휴대폰 사진 한 장이면 충분하다
 MULTIPART_OVERHEAD = 64 * 1024  # multipart 경계·파일명 등 파일 외 메타데이터 여유
 MAX_SHARE_BYTES = 64 * 1024  # 해독 결과 JSON 은 몇 KB — 이보다 크면 해독 결과가 아니다
+TOO_LARGE = f"사진이 너무 커요({MAX_BYTES // (1024 * 1024)}MB 이하)"
 DECODE_PER_MINUTE = max(1, int(os.environ.get("DECODE_PER_MINUTE", "10")))
+DECODE_WINDOW_SECONDS = 60  # DECODE_PER_MINUTE 를 세는 창
 _decode_requests: dict[str, deque[float]] = {}
 WEB_DIR = ROOT / "web"  # 서비스 화면(송유영)
 
@@ -94,9 +96,7 @@ class LimitDecodeUpload:
 
     @staticmethod
     async def _too_large(scope, receive, send):
-        await JSONResponse({"detail": "사진이 너무 커요(10MB 이하)"}, status_code=413)(
-            scope, receive, send
-        )
+        await JSONResponse({"detail": TOO_LARGE}, status_code=413)(scope, receive, send)
 
 
 app.add_middleware(LimitDecodeUpload)
@@ -106,16 +106,11 @@ app.add_middleware(LimitDecodeUpload)
 async def limit_decode_requests(request, call_next):
     if request.method == "POST" and request.url.path == "/decode":
         now = monotonic()
-        # 만료된 IP도 지워 새 주소가 계속 들어와도 기록이 쌓이지 않게 한다.
-        for ip, times in list(_decode_requests.items()):
-            while times and times[0] <= now - 60:
-                times.popleft()
-            if not times:
-                del _decode_requests[ip]
+        _forget_old_decodes(now)
         ip = request.client.host if request.client else "unknown"
         times = _decode_requests.setdefault(ip, deque())
         if len(times) >= DECODE_PER_MINUTE:
-            retry_after = max(1, ceil(times[0] + 60 - now))
+            retry_after = max(1, ceil(times[0] + DECODE_WINDOW_SECONDS - now))
             return JSONResponse(
                 {"detail": "잠시 뒤 다시 올려 주세요"},
                 status_code=429,
@@ -124,6 +119,15 @@ async def limit_decode_requests(request, call_next):
         # await 전에 기록하므로 같은 이벤트 루프의 동시 요청도 한도를 공유한다.
         times.append(now)
     return await call_next(request)
+
+
+def _forget_old_decodes(now: float) -> None:
+    """창 밖으로 나간 기록을 지운다 — 빈 IP 도 지워 새 주소가 계속 와도 기록이 쌓이지 않게."""
+    for ip, times in list(_decode_requests.items()):
+        while times and times[0] <= now - DECODE_WINDOW_SECONDS:
+            times.popleft()
+        if not times:
+            del _decode_requests[ip]
 
 
 @app.middleware("http")
@@ -149,7 +153,7 @@ async def decode_photo(background_tasks: BackgroundTasks, file: UploadFile = Fil
         raise HTTPException(400, "사진 파일만 올릴 수 있어요")
     image = await file.read(MAX_BYTES + 1)
     if len(image) > MAX_BYTES:
-        raise HTTPException(413, "사진이 너무 커요(10MB 이하)")
+        raise HTTPException(413, TOO_LARGE)
     if not image:
         raise HTTPException(400, "빈 사진 파일이에요")
     # 사진은 메모리에서만 쓰고 저장하지 않는다(AI 윤리 — 동의 없이 보관 금지)
